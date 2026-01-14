@@ -1,0 +1,135 @@
+{
+    "recipes": [
+      {
+        "id": "1",
+        "title": "Spaghetti Carbonara",
+        "description": "Klassische italienische Pasta mit cremiger Sauce",
+        "image": "https://images.unsplash.com/photo-1612874742237-6526221588e3?w=800",
+        "prepTime": 10,
+        "cookTime": 15,
+        "servings": 4,
+        "difficulty": "mittel",
+        "category": "Hauptgericht",
+        "tags": ["pasta", "italienisch", "schnell"],
+        "ingredients": [
+          {
+            "item": "Spaghetti",
+            "amount": "400",
+            "unit": "g"
+          },
+          {
+            "item": "Pancetta oder Guanciale",
+            "amount": "150",
+            "unit": "g"
+          },
+          {
+            "item": "Eier",
+            "amount": "4",
+            "unit": "Stück"
+          },
+          {
+            "item": "Parmesan",
+            "amount": "100",
+            "unit": "g"
+          },
+          {
+            "item": "Schwarzer Pfeffer",
+            "amount": "nach Geschmack",
+            "unit": ""
+          },
+          {
+            "item": "Salz",
+            "amount": "nach Geschmack",
+            "unit": ""
+          }
+        ],
+        "instructions": [
+          "Einen großen Topf mit gesalzenem Wasser zum Kochen bringen.",
+          "Pancetta in kleine Würfel schneiden und in einer Pfanne knusprig anbraten.",
+          "Eier mit geriebenem Parmesan und frisch gemahlenem Pfeffer in einer Schüssel verquirlen.",
+          "Spaghetti nach Packungsanweisung al dente kochen.",
+          "Pasta abgießen und dabei etwas Nudelwasser auffangen.",
+          "Heiße Pasta zur Pancetta in die Pfanne geben und vom Herd nehmen.",
+          "Eier-Käse-Mischung schnell unterrühren. Bei Bedarf etwas Nudelwasser hinzufügen für eine cremige Konsistenz.",
+          "Sofort servieren mit zusätzlichem Parmesan und Pfeffer."
+        ],
+        "notes": "Die Pfanne sollte nicht zu heiß sein, damit die Eier nicht stocken. Die Restwärme reicht aus."
+      },
+      {
+        "id": "2",
+        "title": "Gemüsecurry",
+        "description": "Aromatisches veganes Curry mit verschiedenem Gemüse",
+        "image": "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=800",
+        "prepTime": 15,
+        "cookTime": 30,
+        "servings": 4,
+        "difficulty": "einfach",
+        "category": "Meep",
+        "tags": ["vegan", "curry", "gesund", "indisch"],
+        "ingredients": [
+          {
+            "item": "Blumenkohl",
+            "amount": "1",
+            "unit": "Stück"
+          },
+          {
+            "item": "Kartoffeln",
+            "amount": "3",
+            "unit": "Stück"
+          },
+          {
+            "item": "Kichererbsen (Dose)",
+            "amount": "1",
+            "unit": "Dose"
+          },
+          {
+            "item": "Kokosmilch",
+            "amount": "400",
+            "unit": "ml"
+          },
+          {
+            "item": "Tomaten (passiert)",
+            "amount": "400",
+            "unit": "g"
+          },
+          {
+            "item": "Currypaste",
+            "amount": "3",
+            "unit": "EL"
+          },
+          {
+            "item": "Zwiebel",
+            "amount": "1",
+            "unit": "Stück"
+          },
+          {
+            "item": "Knoblauch",
+            "amount": "3",
+            "unit": "Zehen"
+          },
+          {
+            "item": "Ingwer",
+            "amount": "1",
+            "unit": "Stück (ca. 3cm)"
+          },
+          {
+            "item": "Spinat",
+            "amount": "200",
+            "unit": "g"
+          }
+        ],
+        "instructions": [
+          "Zwiebel, Knoblauch und Ingwer fein hacken.",
+          "Blumenkohl in Röschen teilen, Kartoffeln würfeln.",
+          "Öl in einem großen Topf erhitzen und Zwiebel, Knoblauch und Ingwer anbraten.",
+          "Currypaste hinzufügen und kurz mitbraten.",
+          "Kartoffeln und Blumenkohl dazugeben und 2-3 Minuten anbraten.",
+          "Mit passierten Tomaten und Kokosmilch ablöschen.",
+          "Kichererbsen hinzufügen und ca. 20 Minuten köcheln lassen, bis das Gemüse weich ist.",
+          "Spinat unterheben und zusammenfallen lassen.",
+          "Mit Salz abschmecken und mit Reis oder Naan servieren."
+        ],
+        "notes": "Das Curry schmeckt am nächsten Tag noch besser, wenn die Gewürze richtig durchgezogen sind."
+      }
+    ]
+  }
