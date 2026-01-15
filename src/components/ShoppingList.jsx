@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Share2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Check, X } from 'lucide-react';
 import { useShoppingList } from '../context/ShoppingListContext';
-import ShareListModal from './ShareListModal.jsx';
 
 const ShoppingList = () => {
   const navigate = useNavigate();
   const { items, addItem, toggleItem, removeItem, updateItem, clearCheckedItems, clearAll } = useShoppingList();
   
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
   const [newItem, setNewItem] = useState({ item: '', amount: '', unit: '' });
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ item: '', amount: '', unit: '' });
@@ -69,15 +67,6 @@ const ShoppingList = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Share Button */}
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors shadow-lg"
-                title="Liste teilen"
-              >
-                <Share2 className="w-5 h-5" />
-              </button>
-              
               {/* Add Button */}
               <button
                 onClick={() => setShowAddForm(true)}
@@ -89,12 +78,6 @@ const ShoppingList = () => {
           </div>
         </div>
       </div>
-
-      {/* Share Modal */}
-      <ShareListModal 
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-      />
 
       {/* Add Item Form */}
       {showAddForm && (

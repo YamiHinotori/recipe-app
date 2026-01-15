@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { database } from '../firebaseConfig';
-import { ref, set, onValue, remove, update } from 'firebase/database';
+import { ref, set, onValue, remove, update, push } from 'firebase/database';
 import { useAuth } from './AuthContext.jsx';
 
 const ShoppingListContext = createContext();
+const SHOPPING_LIST_PATH = 'shoppingLists/shared/items';
 
 export const useShoppingList = () => {
   const context = useContext(ShoppingListContext);
@@ -24,7 +25,7 @@ export const ShoppingListProvider = ({ children }) => {
     }
 
     // Realtime Listener für die Einkaufsliste
-    const shoppingListRef = ref(database, `shoppingLists/${user.uid}/items`);
+    const shoppingListRef = ref(database, "shoppingLists/shared/items");
     
     const unsubscribe = onValue(shoppingListRef, (snapshot) => {
       const data = snapshot.val();
@@ -60,15 +61,15 @@ export const ShoppingListProvider = ({ children }) => {
         if (existingItem.unit === ingredient.unit && ingredient.amount && !isNaN(parseFloat(ingredient.amount))) {
           const existingAmount = parseFloat(existingItem.amount) || 0;
           const newAmount = parseFloat(ingredient.amount) || 0;
-          updates[`shoppingLists/${user.uid}/items/${existingItem.id}`] = {
+          updates[`${SHOPPING_LIST_PATH}/${existingItem.id}`] = {
             ...existingItem,
             amount: (existingAmount + newAmount).toString(),
             recipes: [...(existingItem.recipes || []), recipe.title]
           };
         } else {
           // Unterschiedliche Einheiten - als neues Item
-          const newId = Date.now() + Math.random().toString(36);
-          updates[`shoppingLists/${user.uid}/items/${newId}`] = {
+          const newId = Date.now().toString() + Math.random().toString(36).substring(2);
+          updates[`${SHOPPING_LIST_PATH}/${newId}`] = {
             ...ingredient,
             checked: false,
             recipes: [recipe.title]
@@ -76,8 +77,8 @@ export const ShoppingListProvider = ({ children }) => {
         }
       } else {
         // Neues Item
-        const newId = Date.now() + Math.random().toString(36);
-        updates[`shoppingLists/${user.uid}/items/${newId}`] = {
+        const newId = Date.now().toString() + Math.random().toString(36).substring(2);
+        updates[`${SHOPPING_LIST_PATH}/${newId}`] = {
           ...ingredient,
           checked: false,
           recipes: [recipe.title]
@@ -97,7 +98,7 @@ export const ShoppingListProvider = ({ children }) => {
     if (!user) return;
 
     const newId = Date.now().toString();
-    const itemRef = ref(database, `shoppingLists/${user.uid}/items/${newId}`);
+    const itemRef = ref(database, `${SHOPPING_LIST_PATH}/${newId}`);
     
     try {
       await set(itemRef, {
@@ -119,7 +120,7 @@ export const ShoppingListProvider = ({ children }) => {
     const item = items.find(i => i.id === id);
     if (!item) return;
 
-    const itemRef = ref(database, `shoppingLists/${user.uid}/items/${id}`);
+    const itemRef = ref(database, `${SHOPPING_LIST_PATH}/${id}`);
     
     try {
       await update(itemRef, {
@@ -134,7 +135,7 @@ export const ShoppingListProvider = ({ children }) => {
   const removeItem = async (id) => {
     if (!user) return;
 
-    const itemRef = ref(database, `shoppingLists/${user.uid}/items/${id}`);
+    const itemRef = ref(database, `${SHOPPING_LIST_PATH}/${id}`);
     
     try {
       await remove(itemRef);
@@ -147,7 +148,7 @@ export const ShoppingListProvider = ({ children }) => {
   const updateItem = async (id, updates) => {
     if (!user) return;
 
-    const itemRef = ref(database, `shoppingLists/${user.uid}/items/${id}`);
+    const itemRef = ref(database, `${SHOPPING_LIST_PATH}/${id}`);
     
     try {
       await update(itemRef, updates);
@@ -163,7 +164,7 @@ export const ShoppingListProvider = ({ children }) => {
     const updates = {};
     items.forEach(item => {
       if (item.checked) {
-        updates[`shoppingLists/${user.uid}/items/${item.id}`] = null;
+        updates[`${SHOPPING_LIST_PATH}/${item.id}`] = null;
       }
     });
 
@@ -178,7 +179,7 @@ export const ShoppingListProvider = ({ children }) => {
   const clearAll = async () => {
     if (!user) return;
 
-    const listRef = ref(database, `shoppingLists/${user.uid}/items`);
+    const listRef = ref(database, "shoppingLists/shared/items");
     
     try {
       await remove(listRef);
