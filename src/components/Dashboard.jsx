@@ -1,18 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Clock, Users, ChefHat, Search } from 'lucide-react';
-import recipesData from '../recipes.json';
+import { Clock, Users, ChefHat, Search, ShoppingCart, LogOut, Settings } from 'lucide-react';
+import { useShoppingList } from '../context/ShoppingListContext';
+import { useAuth } from '../context/AuthContext';
+import { useRecipes } from '../context/RecipeContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { items } = useShoppingList();
+  const { user, logout } = useAuth();
+  const { recipes, loading } = useRecipes();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Alle');
 
   // Alle einzigartigen Kategorien extrahieren
-  const categories = ['Alle', ...new Set(recipesData.recipes.map(r => r.category))];
+  const categories = ['Alle', ...new Set(recipes.map(r => r.category))];
 
   // Rezepte filtern
-  const filteredRecipes = recipesData.recipes.filter(recipe => {
+  const filteredRecipes = recipes.filter(recipe => {
     const matchesSearch = recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          recipe.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -26,17 +31,76 @@ const Dashboard = () => {
     navigate(`/recipe/${id}`);
   };
 
+  const handleLogout = async () => {
+    if (window.confirm('Möchtest du dich wirklich abmelden?')) {
+      await logout();
+    }
+  };
+
+  const uncheckedItemsCount = items.filter(item => !item.checked).length;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-            🍳 Meine Rezepte
-          </h1>
-          <p className="text-gray-600">
-            {filteredRecipes.length} {filteredRecipes.length === 1 ? 'Rezept' : 'Rezepte'} gefunden
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                🍳 Meine Rezepte
+              </h1>
+              <p className="text-gray-600">
+                {filteredRecipes.length} {filteredRecipes.length === 1 ? 'Rezept' : 'Rezepte'} gefunden
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Admin Button */}
+              <button
+                onClick={() => navigate('/admin')}
+                className="bg-purple-500 text-white p-3 rounded-full hover:bg-purple-600 transition-colors shadow-lg"
+                title="Admin Panel"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+
+              {/* Shopping List Button */}
+              <button
+                onClick={() => navigate('/shopping-list')}
+                className="relative bg-green-500 text-white p-3 rounded-full hover:bg-green-600 transition-colors shadow-lg"
+              >
+                <ShoppingCart className="w-6 h-6" />
+                {uncheckedItemsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {uncheckedItemsCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="bg-gray-200 text-gray-700 p-3 rounded-full hover:bg-gray-300 transition-colors"
+                title="Abmelden"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* User Info */}
+          {user && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              {user.photoURL && (
+                <img 
+                  src={user.photoURL} 
+                  alt={user.displayName}
+                  className="w-6 h-6 rounded-full"
+                />
+              )}
+              <span>Angemeldet als {user.displayName || user.email}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -74,7 +138,12 @@ const Dashboard = () => {
 
       {/* Rezept-Grid */}
       <div className="max-w-7xl mx-auto px-4 pb-8">
-        {filteredRecipes.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="w-8 h-8 border-4 border-gray-300 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-500">Lade Rezepte...</p>
+          </div>
+        ) : filteredRecipes.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">Keine Rezepte gefunden</p>
             <p className="text-gray-400 text-sm mt-2">Versuche einen anderen Suchbegriff</p>

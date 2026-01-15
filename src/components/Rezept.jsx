@@ -1,12 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { Clock, Users, ChefHat, ArrowLeft } from 'lucide-react';
-import recipesData from '../recipes.json';
+import { Clock, Users, ChefHat, ArrowLeft, ShoppingCart, Check } from 'lucide-react';
+import { useShoppingList } from '../context/ShoppingListContext';
+import { useRecipes } from '../context/RecipeContext';
 
 const RecipeView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const recipe = recipesData.recipes.find(r => r.id === id);
+  const { addRecipeToList } = useShoppingList();
+  const { recipes } = useRecipes();
+  const recipe = recipes.find(r => r.id === id);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const handleAddToShoppingList = () => {
+    addRecipeToList(recipe);
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 2000);
+  };
 
   if (!recipe) {
     return (
@@ -82,6 +92,26 @@ const RecipeView = () => {
             </span>
           ))}
         </div>
+      </div>
+
+      {/* Add to Shopping List Button */}
+      <div className="max-w-4xl mx-auto px-4 mt-6">
+        <button
+          onClick={handleAddToShoppingList}
+          className="w-full bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2 font-semibold shadow-md"
+        >
+          {showSuccess ? (
+            <>
+              <Check className="w-5 h-5" />
+              Zur Einkaufsliste hinzugefügt!
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="w-5 h-5" />
+              Zur Einkaufsliste hinzufügen
+            </>
+          )}
+        </button>
       </div>
 
       {/* Hauptinhalt */}
