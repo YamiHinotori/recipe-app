@@ -34,7 +34,7 @@ const AdminPanel = () => {
     try {
       const recipeData = {
         ...formData,
-        tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+        tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(t => t) : [],
         ingredients: formData.ingredients.filter(i => i.item.trim()),
         instructions: formData.instructions.filter(i => i.trim()),
         prepTime: parseInt(formData.prepTime) || 0,
@@ -64,7 +64,7 @@ const AdminPanel = () => {
     setEditingId(recipe.id);
     setFormData({
       ...recipe,
-      tags: recipe.tags.join(', ')
+      tags: Array.isArray(recipe.tags) ? recipe.tags.join(', ') : (recipe.tags || '')
     });
     setShowForm(true);
   };

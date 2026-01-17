@@ -83,7 +83,7 @@ const RecipeView = () => {
           <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">
             {recipe.category}
           </span>
-          {recipe.tags.map((tag, index) => (
+          {Array.isArray(recipe.tags) && recipe.tags.map((tag, index) => (
             <span 
               key={index}
               className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"

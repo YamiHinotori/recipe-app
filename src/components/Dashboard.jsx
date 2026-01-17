@@ -20,7 +20,7 @@ const Dashboard = () => {
   const filteredRecipes = recipes.filter(recipe => {
     const matchesSearch = recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          recipe.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+                         (Array.isArray(recipe.tags) && recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
     
     const matchesCategory = selectedCategory === 'Alle' || recipe.category === selectedCategory;
     
@@ -195,7 +195,7 @@ const Dashboard = () => {
 
                   {/* Tags */}
                   <div className="flex flex-wrap gap-1">
-                    {recipe.tags.slice(0, 3).map((tag, index) => (
+                    {Array.isArray(recipe.tags) && recipe.tags.slice(0, 3).map((tag, index) => (
                       <span
                         key={index}
                         className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs"
