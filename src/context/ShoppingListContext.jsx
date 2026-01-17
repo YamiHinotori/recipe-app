@@ -1,10 +1,27 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { database } from '../firebaseConfig';
-import { ref, set, onValue, remove, update, push } from 'firebase/database';
+import { ref, set, onValue, remove, update } from 'firebase/database';
 import { useAuth } from './AuthContext.jsx';
 
 const ShoppingListContext = createContext();
 const SHOPPING_LIST_PATH = 'shoppingLists/shared/items';
+const STORE_LAYOUT_PATH = 'shoppingLists/shared/storeLayout';
+
+// Standard-Laden-Layout (kann später angepasst werden)
+const DEFAULT_STORE_CATEGORIES = [
+  { id: 'obst-gemuese', name: 'Obst & Gemüse', order: 1 },
+  { id: 'backwaren', name: 'Backwaren', order: 2 },
+  { id: 'fleisch-fisch', name: 'Fleisch & Fisch', order: 3 },
+  { id: 'milchprodukte', name: 'Milchprodukte', order: 4 },
+  { id: 'tiefkuehl', name: 'Tiefkühlware', order: 5 },
+  { id: 'konserven', name: 'Konserven', order: 6 },
+  { id: 'nudeln-reis', name: 'Nudeln, Reis & Getreide', order: 7 },
+  { id: 'gewuerze', name: 'Gewürze & Öle', order: 8 },
+  { id: 'getraenke', name: 'Getränke', order: 9 },
+  { id: 'suessigkeiten', name: 'Süßigkeiten & Snacks', order: 10 },
+  { id: 'haushalt', name: 'Haushalt & Drogerie', order: 11 },
+  { id: 'sonstiges', name: 'Sonstiges', order: 99 }
+];
 
 export const useShoppingList = () => {
   const context = useContext(ShoppingListContext);
@@ -16,6 +33,7 @@ export const useShoppingList = () => {
 
 export const ShoppingListProvider = ({ children }) => {
   const [items, setItems] = useState([]);
+  const [storeCategories, setStoreCategories] = useState(DEFAULT_STORE_CATEGORIES);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -25,23 +43,36 @@ export const ShoppingListProvider = ({ children }) => {
     }
 
     // Realtime Listener für die Einkaufsliste
-    const shoppingListRef = ref(database, "shoppingLists/shared/items");
+    const shoppingListRef = ref(database, SHOPPING_LIST_PATH);
     
     const unsubscribe = onValue(shoppingListRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Konvertiere Object zu Array
         const itemsArray = Object.entries(data).map(([id, item]) => ({
           id,
           ...item
         }));
+        // Sortiere nach order Property
+        itemsArray.sort((a, b) => (a.order || 0) - (b.order || 0));
         setItems(itemsArray);
       } else {
         setItems([]);
       }
     });
 
-    return () => unsubscribe();
+    // Listener für Store Layout
+    const layoutRef = ref(database, STORE_LAYOUT_PATH);
+    const layoutUnsubscribe = onValue(layoutRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setStoreCategories(data);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      layoutUnsubscribe();
+    };
   }, [user]);
 
   // Rezept zur Einkaufsliste hinzufügen
@@ -49,15 +80,15 @@ export const ShoppingListProvider = ({ children }) => {
     if (!user) return;
 
     const updates = {};
+    const maxOrder = items.length > 0 ? Math.max(...items.map(i => i.order || 0)) : 0;
+    let orderCounter = maxOrder + 1;
     
     recipe.ingredients.forEach(ingredient => {
-      // Suche nach existierendem Item mit gleichem Namen
       const existingItem = items.find(
         item => item.item.toLowerCase() === ingredient.item.toLowerCase()
       );
 
       if (existingItem) {
-        // Item existiert bereits - Mengen addieren
         if (existingItem.unit === ingredient.unit && ingredient.amount && !isNaN(parseFloat(ingredient.amount))) {
           const existingAmount = parseFloat(existingItem.amount) || 0;
           const newAmount = parseFloat(ingredient.amount) || 0;
@@ -67,21 +98,23 @@ export const ShoppingListProvider = ({ children }) => {
             recipes: [...(existingItem.recipes || []), recipe.title]
           };
         } else {
-          // Unterschiedliche Einheiten - als neues Item
           const newId = Date.now().toString() + Math.random().toString(36).substring(2);
           updates[`${SHOPPING_LIST_PATH}/${newId}`] = {
             ...ingredient,
             checked: false,
-            recipes: [recipe.title]
+            recipes: [recipe.title],
+            order: orderCounter++,
+            category: 'sonstiges'
           };
         }
       } else {
-        // Neues Item
         const newId = Date.now().toString() + Math.random().toString(36).substring(2);
         updates[`${SHOPPING_LIST_PATH}/${newId}`] = {
           ...ingredient,
           checked: false,
-          recipes: [recipe.title]
+          recipes: [recipe.title],
+          order: orderCounter++,
+          category: 'sonstiges'
         };
       }
     });
@@ -94,9 +127,10 @@ export const ShoppingListProvider = ({ children }) => {
   };
 
   // Einzelnes Item hinzufügen
-  const addItem = async (item, amount, unit) => {
+  const addItem = async (item, amount, unit, category = 'sonstiges') => {
     if (!user) return;
 
+    const maxOrder = items.length > 0 ? Math.max(...items.map(i => i.order || 0)) : 0;
     const newId = Date.now().toString();
     const itemRef = ref(database, `${SHOPPING_LIST_PATH}/${newId}`);
     
@@ -106,7 +140,9 @@ export const ShoppingListProvider = ({ children }) => {
         amount,
         unit,
         checked: false,
-        recipes: []
+        recipes: [],
+        order: maxOrder + 1,
+        category
       });
     } catch (error) {
       console.error('Fehler beim Hinzufügen:', error);
@@ -157,6 +193,67 @@ export const ShoppingListProvider = ({ children }) => {
     }
   };
 
+  // Reihenfolge ändern (Drag & Drop)
+  const reorderItems = async (reorderedItems) => {
+    if (!user) return;
+
+    const updates = {};
+    reorderedItems.forEach((item, index) => {
+      updates[`${SHOPPING_LIST_PATH}/${item.id}/order`] = index;
+    });
+
+    try {
+      await update(ref(database), updates);
+    } catch (error) {
+      console.error('Fehler beim Sortieren:', error);
+    }
+  };
+
+  // Nach Laden-Layout sortieren
+  const sortByStoreLayout = async () => {
+    if (!user) return;
+
+    const updates = {};
+    
+    // Gruppiere Items nach Kategorie
+    const itemsByCategory = items.reduce((acc, item) => {
+      const category = item.category || 'sonstiges';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(item);
+      return acc;
+    }, {});
+
+    // Sortiere nach Store Layout
+    let order = 0;
+    storeCategories
+      .sort((a, b) => a.order - b.order)
+      .forEach(category => {
+        const categoryItems = itemsByCategory[category.id] || [];
+        categoryItems.forEach(item => {
+          updates[`${SHOPPING_LIST_PATH}/${item.id}/order`] = order++;
+        });
+      });
+
+    try {
+      await update(ref(database), updates);
+    } catch (error) {
+      console.error('Fehler beim Sortieren:', error);
+    }
+  };
+
+  // Store Layout aktualisieren
+  const updateStoreLayout = async (newLayout) => {
+    if (!user) return;
+
+    const layoutRef = ref(database, STORE_LAYOUT_PATH);
+    
+    try {
+      await set(layoutRef, newLayout);
+    } catch (error) {
+      console.error('Fehler beim Speichern des Layouts:', error);
+    }
+  };
+
   // Abgehakte Items entfernen
   const clearCheckedItems = async () => {
     if (!user) return;
@@ -179,7 +276,7 @@ export const ShoppingListProvider = ({ children }) => {
   const clearAll = async () => {
     if (!user) return;
 
-    const listRef = ref(database, "shoppingLists/shared/items");
+    const listRef = ref(database, SHOPPING_LIST_PATH);
     
     try {
       await remove(listRef);
@@ -190,11 +287,15 @@ export const ShoppingListProvider = ({ children }) => {
 
   const value = {
     items,
+    storeCategories,
     addRecipeToList,
     addItem,
     toggleItem,
     removeItem,
     updateItem,
+    reorderItems,
+    sortByStoreLayout,
+    updateStoreLayout,
     clearCheckedItems,
     clearAll
   };

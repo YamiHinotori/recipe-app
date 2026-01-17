@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Plus, Edit2, Trash2, Save, X } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Save, X, Package } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
 
 const AdminPanel = () => {
@@ -140,17 +140,27 @@ const AdminPanel = () => {
               </div>
             </div>
             
-            <button
-              onClick={() => {
-                setShowForm(true);
-                setEditingId(null);
-                setFormData(getEmptyForm());
-              }}
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Neues Rezept
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/products')}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+              >
+                <Package className="w-5 h-5" />
+                Produkte verwalten
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowForm(true);
+                  setEditingId(null);
+                  setFormData(getEmptyForm());
+                }}
+                className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Neues Rezept
+              </button>
+            </div>
           </div>
         </div>
       </div>

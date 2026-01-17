@@ -4,10 +4,12 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ShoppingListProvider } from './context/ShoppingListContext';
 import { RecipeProvider } from './context/RecipeContext';
+import { ProductDatabaseProvider } from './context/ProductDatabaseContext';
 import Dashboard from './components/Dashboard.jsx';
 import Rezept from './components/Rezept.jsx';
 import ShoppingList from './components/ShoppingList.jsx';
 import AdminPanel from './components/AdminPanel.jsx';
+import ProductManager from './components/ProductManager.jsx';
 import Login from './components/Login.jsx';
 import "./index.css";
 
@@ -69,6 +71,15 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        
+        <Route
+          path="/products"
+          element={
+            <ProtectedRoute>
+              <ProductManager />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
@@ -80,9 +91,11 @@ root.render(
   <React.StrictMode>
     <AuthProvider>
       <RecipeProvider>
-        <ShoppingListProvider>
-          <App />
-        </ShoppingListProvider>
+        <ProductDatabaseProvider>
+          <ShoppingListProvider>
+            <App />
+          </ShoppingListProvider>
+        </ProductDatabaseProvider>
       </RecipeProvider>
     </AuthProvider>
   </React.StrictMode>
