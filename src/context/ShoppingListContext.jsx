@@ -2,13 +2,13 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { database } from '../firebaseConfig';
 import { ref, set, onValue, remove, update } from 'firebase/database';
 import { useAuth } from './AuthContext.jsx';
+import { useStoreLayouts } from './StoreLayoutsContext.jsx';
 
 const ShoppingListContext = createContext();
 const SHOPPING_LIST_PATH = 'shoppingLists/shared/items';
-const STORE_LAYOUT_PATH = 'shoppingLists/shared/storeLayout';
 const PRODUCT_DATABASE_PATH = 'productDatabase';
 
-// Standard-Laden-Layout (kann später angepasst werden)
+// Standard-Laden-Layout bleibt als Fallback
 const DEFAULT_STORE_CATEGORIES = [
   { id: 'obst-gemuese', name: 'Obst & Gemüse', order: 1 },
   { id: 'backwaren', name: 'Backwaren', order: 2 },
@@ -34,9 +34,12 @@ export const useShoppingList = () => {
 
 export const ShoppingListProvider = ({ children }) => {
   const [items, setItems] = useState([]);
-  const [storeCategories, setStoreCategories] = useState(DEFAULT_STORE_CATEGORIES);
   const [productDatabase, setProductDatabase] = useState([]);
   const { user } = useAuth();
+  const { getActiveCategories } = useStoreLayouts();
+  
+  // Hole aktive Kategorien aus StoreLayoutsContext
+  const storeCategories = getActiveCategories();
 
   useEffect(() => {
     if (!user) {
@@ -62,15 +65,6 @@ export const ShoppingListProvider = ({ children }) => {
       }
     });
 
-    // Listener für Store Layout
-    const layoutRef = ref(database, STORE_LAYOUT_PATH);
-    const layoutUnsubscribe = onValue(layoutRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setStoreCategories(data);
-      }
-    });
-
     // Listener für Produktdatenbank
     const productsRef = ref(database, PRODUCT_DATABASE_PATH);
     const productsUnsubscribe = onValue(productsRef, (snapshot) => {
@@ -83,7 +77,6 @@ export const ShoppingListProvider = ({ children }) => {
 
     return () => {
       unsubscribe();
-      layoutUnsubscribe();
       productsUnsubscribe();
     };
   }, [user]);
@@ -289,17 +282,9 @@ export const ShoppingListProvider = ({ children }) => {
     }
   };
 
-  // Store Layout aktualisieren
+  // Store Layout aktualisieren (DEPRECATED - wird jetzt über StoreLayoutsContext gemacht)
   const updateStoreLayout = async (newLayout) => {
-    if (!user) return;
-
-    const layoutRef = ref(database, STORE_LAYOUT_PATH);
-    
-    try {
-      await set(layoutRef, newLayout);
-    } catch (error) {
-      console.error('Fehler beim Speichern des Layouts:', error);
-    }
+    console.warn('updateStoreLayout ist deprecated - verwende StoreLayoutsContext');
   };
 
   // Abgehakte Items entfernen

@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, GripVertical, Plus, Trash2 } from 'lucide-react';
-import { useShoppingList } from '../context/ShoppingListContext';
+import { useStoreLayouts } from '../context/StoreLayoutsContext';
 
 const StoreLayoutEditor = ({ isOpen, onClose }) => {
-  const { storeCategories, updateStoreLayout } = useShoppingList();
-  const [categories, setCategories] = useState([...storeCategories].sort((a, b) => a.order - b.order));
+  const { getActiveStore, updateStoreCategories, selectedStoreId } = useStoreLayouts();
+  const activeStore = getActiveStore();
+  
+  const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState({ name: '', id: '' });
   const [draggedItem, setDraggedItem] = useState(null);
+
+  useEffect(() => {
+    if (activeStore?.categories) {
+      setCategories([...activeStore.categories].sort((a, b) => a.order - b.order));
+    }
+  }, [activeStore]);
 
   const handleDragStart = (e, index) => {
     setDraggedItem(index);
@@ -44,16 +52,18 @@ const StoreLayoutEditor = ({ isOpen, onClose }) => {
   };
 
   const handleSave = async () => {
+    if (!selectedStoreId) return;
+    
     const updatedCategories = categories.map((cat, index) => ({
       ...cat,
       order: index + 1
     }));
 
-    await updateStoreLayout(updatedCategories);
+    await updateStoreCategories(selectedStoreId, updatedCategories);
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !activeStore) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -63,7 +73,7 @@ const StoreLayoutEditor = ({ isOpen, onClose }) => {
           <div>
             <h2 className="text-xl font-bold text-gray-800">Laden-Layout anpassen</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Ordne die Kategorien in der Reihenfolge deines Supermarkts
+              {activeStore.name} - Kategorien sortieren
             </p>
           </div>
           <button

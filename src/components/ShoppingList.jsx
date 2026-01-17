@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Trash2, Edit2, Check, X, GripVertical, Store, Settings
 import { useShoppingList } from '../context/ShoppingListContext';
 import { useProductDatabase } from '../context/ProductDatabaseContext';
 import StoreLayoutEditor from './StoreLayoutEditor';
+import StoreSelectorModal from './StoreSelectorModal';
 
 const ShoppingList = () => {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ const ShoppingList = () => {
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [showLayoutEditor, setShowLayoutEditor] = useState(false);
+  const [showStoreSelector, setShowStoreSelector] = useState(false);
 
   const handleAddItem = async (e) => {
     e.preventDefault();
@@ -54,6 +56,10 @@ const ShoppingList = () => {
     
     if (value.length >= 2) {
       const results = searchProducts(value);
+      console.log('=== DEBUG SUCHE ===');
+      console.log('Suchbegriff:', value);
+      console.log('Gefundene Ergebnisse:', results);
+      console.log('Anzahl:', results.length);
       setSearchResults(results);
       setShowSuggestions(results.length > 0);
     } else {
@@ -140,9 +146,11 @@ const ShoppingList = () => {
   };
 
   const handleSortByStore = () => {
-    if (window.confirm('Möchtest du die Liste nach dem Laden-Layout sortieren?')) {
-      sortByStoreLayout();
-    }
+    setShowStoreSelector(true);
+  };
+
+  const handleStoreSelected = (storeId) => {
+    sortByStoreLayout();
   };
 
   const uncheckedItems = items.filter(item => !item.checked);
@@ -159,6 +167,13 @@ const ShoppingList = () => {
       <StoreLayoutEditor 
         isOpen={showLayoutEditor}
         onClose={() => setShowLayoutEditor(false)}
+      />
+
+      {/* Store Selector Modal */}
+      <StoreSelectorModal
+        isOpen={showStoreSelector}
+        onClose={() => setShowStoreSelector(false)}
+        onSelectStore={handleStoreSelected}
       />
 
       {/* Header */}
@@ -183,9 +198,9 @@ const ShoppingList = () => {
             <div className="flex items-center gap-2">
               {/* Store Layout Settings */}
               <button
-                onClick={() => setShowLayoutEditor(true)}
+                onClick={() => navigate('/stores')}
                 className="bg-purple-500 text-white p-2 rounded-full hover:bg-purple-600 transition-colors shadow-lg"
-                title="Laden-Layout anpassen"
+                title="Läden verwalten"
               >
                 <Settings className="w-5 h-5" />
               </button>
