@@ -6,6 +6,7 @@ import { useAuth } from './AuthContext.jsx';
 const ShoppingListContext = createContext();
 const SHOPPING_LIST_PATH = 'shoppingLists/shared/items';
 const STORE_LAYOUT_PATH = 'shoppingLists/shared/storeLayout';
+const PRODUCT_DATABASE_PATH = 'productDatabase';
 
 // Standard-Laden-Layout (kann später angepasst werden)
 const DEFAULT_STORE_CATEGORIES = [
@@ -34,6 +35,7 @@ export const useShoppingList = () => {
 export const ShoppingListProvider = ({ children }) => {
   const [items, setItems] = useState([]);
   const [storeCategories, setStoreCategories] = useState(DEFAULT_STORE_CATEGORIES);
+  const [productDatabase, setProductDatabase] = useState([]);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -69,11 +71,53 @@ export const ShoppingListProvider = ({ children }) => {
       }
     });
 
+    // Listener für Produktdatenbank
+    const productsRef = ref(database, PRODUCT_DATABASE_PATH);
+    const productsUnsubscribe = onValue(productsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data && Array.isArray(data)) {
+        setProductDatabase(data);
+        console.log('Produktdatenbank geladen für Kategorie-Lookup:', data.length, 'Produkte');
+      }
+    });
+
     return () => {
       unsubscribe();
       layoutUnsubscribe();
+      productsUnsubscribe();
     };
   }, [user]);
+
+  // Hilfsfunktion: Finde Kategorie für ein Produkt
+  const findCategoryForProduct = (productName) => {
+    if (!productName) return 'sonstiges';
+    
+    const normalizedName = productName.toLowerCase().trim();
+    
+    // Suche nach exakter Übereinstimmung
+    let product = productDatabase.find(p => 
+      p.name.toLowerCase().trim() === normalizedName
+    );
+    
+    if (product && product.category) {
+      console.log(`Kategorie gefunden für "${productName}": ${product.category}`);
+      return product.category;
+    }
+    
+    // Suche nach Teilübereinstimmung (z.B. "Tomaten (Dose)" findet "Tomaten")
+    product = productDatabase.find(p => {
+      const dbName = p.name.toLowerCase().trim();
+      return normalizedName.includes(dbName) || dbName.includes(normalizedName);
+    });
+    
+    if (product && product.category) {
+      console.log(`Kategorie gefunden (Teilübereinstimmung) für "${productName}": ${product.category}`);
+      return product.category;
+    }
+    
+    console.log(`Keine Kategorie gefunden für "${productName}" - verwende "sonstiges"`);
+    return 'sonstiges';
+  };
 
   // Rezept zur Einkaufsliste hinzufügen
   const addRecipeToList = async (recipe) => {
@@ -87,6 +131,9 @@ export const ShoppingListProvider = ({ children }) => {
       const existingItem = items.find(
         item => item.item.toLowerCase() === ingredient.item.toLowerCase()
       );
+
+      // Bestimme die Kategorie aus der Produktdatenbank
+      const category = findCategoryForProduct(ingredient.item);
 
       if (existingItem) {
         if (existingItem.unit === ingredient.unit && ingredient.amount && !isNaN(parseFloat(ingredient.amount))) {
@@ -104,7 +151,7 @@ export const ShoppingListProvider = ({ children }) => {
             checked: false,
             recipes: [recipe.title],
             order: orderCounter++,
-            category: 'sonstiges'
+            category // Verwende gefundene Kategorie
           };
         }
       } else {
@@ -114,13 +161,14 @@ export const ShoppingListProvider = ({ children }) => {
           checked: false,
           recipes: [recipe.title],
           order: orderCounter++,
-          category: 'sonstiges'
+          category // Verwende gefundene Kategorie
         };
       }
     });
 
     try {
       await update(ref(database), updates);
+      console.log('Rezept zur Einkaufsliste hinzugefügt mit automatischen Kategorien');
     } catch (error) {
       console.error('Fehler beim Hinzufügen:', error);
     }

@@ -16,7 +16,13 @@ const ProductManager = () => {
   const [newProduct, setNewProduct] = useState({ name: '', category: 'sonstiges', commonUnit: '' });
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Produkte filtern
+  // Hilfsfunktion ZUERST definieren
+  const getCategoryName = (categoryId) => {
+    const category = storeCategories.find(c => c.id === categoryId);
+    return category ? category.name : 'Sonstiges';
+  };
+
+  // Produkte filtern - NACH getCategoryName
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     getCategoryName(product.category).toLowerCase().includes(searchTerm.toLowerCase())
@@ -31,11 +37,6 @@ const ProductManager = () => {
     acc[category].push(product);
     return acc;
   }, {});
-
-  const getCategoryName = (categoryId) => {
-    const category = storeCategories.find(c => c.id === categoryId);
-    return category ? category.name : 'Sonstiges';
-  };
 
   const handleStartEdit = (product, index) => {
     setEditingId(index);
