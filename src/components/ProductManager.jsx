@@ -130,10 +130,11 @@ const ProductManager = () => {
             
             <button
               onClick={() => setShowAddForm(true)}
-              className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
+              className="bg-green-500 text-white p-2 md:px-4 md:py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
+              title="Neues Produkt"
             >
               <Plus className="w-5 h-5" />
-              Neues Produkt
+              <span className="hidden md:inline">Neues Produkt</span>
             </button>
           </div>
         </div>

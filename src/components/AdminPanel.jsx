@@ -143,10 +143,11 @@ const AdminPanel = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => navigate('/products')}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                className="bg-blue-500 text-white p-2 md:px-4 md:py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                title="Produkte verwalten"
               >
                 <Package className="w-5 h-5" />
-                Produkte verwalten
+                <span className="hidden md:inline">Produkte verwalten</span>
               </button>
               
               <button
@@ -155,10 +156,11 @@ const AdminPanel = () => {
                   setEditingId(null);
                   setFormData(getEmptyForm());
                 }}
-                className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
+                className="bg-orange-500 text-white p-2 md:px-4 md:py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
+                title="Neues Rezept"
               >
                 <Plus className="w-5 h-5" />
-                Neues Rezept
+                <span className="hidden md:inline">Neues Rezept</span>
               </button>
             </div>
           </div>
