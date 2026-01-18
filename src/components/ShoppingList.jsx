@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router';
 import { ArrowLeft, Plus, Trash2, Edit2, Check, X, GripVertical, Store, Settings } from 'lucide-react';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { useProductDatabase } from '../context/ProductDatabaseContext';
-import StoreLayoutEditor from './StoreLayoutEditor';
 import StoreSelectorModal from './StoreSelectorModal';
 
 const ShoppingList = () => {
@@ -11,6 +10,8 @@ const ShoppingList = () => {
   const { 
     items, 
     storeCategories,
+    currentListType,
+    setCurrentListType,
     addItem, 
     toggleItem, 
     removeItem, 
@@ -30,7 +31,6 @@ const ShoppingList = () => {
   const [editForm, setEditForm] = useState({ item: '', amount: '', unit: '', category: 'sonstiges' });
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
-  const [showLayoutEditor, setShowLayoutEditor] = useState(false);
   const [showStoreSelector, setShowStoreSelector] = useState(false);
 
   const handleAddItem = async (e) => {
@@ -163,12 +163,6 @@ const ShoppingList = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Store Layout Editor Modal */}
-      <StoreLayoutEditor 
-        isOpen={showLayoutEditor}
-        onClose={() => setShowLayoutEditor(false)}
-      />
-
       {/* Store Selector Modal */}
       <StoreSelectorModal
         isOpen={showStoreSelector}
@@ -188,7 +182,7 @@ const ShoppingList = () => {
                 <ArrowLeft className="w-6 h-6 text-gray-700" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800">Einkaufsliste</h1>
+                <h1 className="text-xl md:text-2xl font-bold text-gray-800">Einkaufsliste</h1>
                 <p className="text-sm text-gray-600">
                   {uncheckedItems.length} {uncheckedItems.length === 1 ? 'Artikel' : 'Artikel'}
                 </p>
@@ -224,6 +218,32 @@ const ShoppingList = () => {
                 <Plus className="w-6 h-6" />
               </button>
             </div>
+          </div>
+        </div>
+        
+        {/* Liste-Umschalter */}
+        <div className="max-w-4xl mx-auto px-4 pb-3">
+          <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setCurrentListType('shared')}
+              className={`flex-1 py-2 px-4 rounded-md font-medium text-sm transition-all ${
+                currentListType === 'shared'
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              👥 Gemeinsam
+            </button>
+            <button
+              onClick={() => setCurrentListType('personal')}
+              className={`flex-1 py-2 px-4 rounded-md font-medium text-sm transition-all ${
+                currentListType === 'personal'
+                  ? 'bg-white text-purple-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              👤 Persönlich
+            </button>
           </div>
         </div>
       </div>

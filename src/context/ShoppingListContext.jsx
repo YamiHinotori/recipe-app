@@ -5,8 +5,16 @@ import { useAuth } from './AuthContext.jsx';
 import { useStoreLayouts } from './StoreLayoutsContext.jsx';
 
 const ShoppingListContext = createContext();
-const SHOPPING_LIST_PATH = 'shoppingLists/shared/items';
 const PRODUCT_DATABASE_PATH = 'productDatabase';
+
+// Dynamischer Pfad basierend auf dem Listen-Typ
+const getShoppingListPath = (listType, userId) => {
+  if (listType === 'shared') {
+    return 'shoppingLists/shared/items';
+  } else {
+    return `shoppingLists/personal/${userId}/items`;
+  }
+};
 
 // Standard-Laden-Layout bleibt als Fallback
 const DEFAULT_STORE_CATEGORIES = [
@@ -35,6 +43,7 @@ export const useShoppingList = () => {
 export const ShoppingListProvider = ({ children }) => {
   const [items, setItems] = useState([]);
   const [productDatabase, setProductDatabase] = useState([]);
+  const [currentListType, setCurrentListType] = useState('shared'); // 'shared' oder 'personal'
   const { user } = useAuth();
   const { getActiveCategories } = useStoreLayouts();
   
@@ -47,8 +56,12 @@ export const ShoppingListProvider = ({ children }) => {
       return;
     }
 
+    // Aktueller Pfad basierend auf Listen-Typ
+    const listPath = getShoppingListPath(currentListType, user.uid);
+    console.log('Lade Einkaufsliste:', currentListType, 'Pfad:', listPath);
+
     // Realtime Listener für die Einkaufsliste
-    const shoppingListRef = ref(database, SHOPPING_LIST_PATH);
+    const shoppingListRef = ref(database, listPath);
     
     const unsubscribe = onValue(shoppingListRef, (snapshot) => {
       const data = snapshot.val();
@@ -79,7 +92,7 @@ export const ShoppingListProvider = ({ children }) => {
       unsubscribe();
       productsUnsubscribe();
     };
-  }, [user]);
+  }, [user, currentListType]); // Neu laden wenn Liste gewechselt wird
 
   // Hilfsfunktion: Finde Kategorie für ein Produkt
   const findCategoryForProduct = (productName) => {
@@ -116,6 +129,7 @@ export const ShoppingListProvider = ({ children }) => {
   const addRecipeToList = async (recipe) => {
     if (!user) return;
 
+    const listPath = getShoppingListPath(currentListType, user.uid);
     const updates = {};
     const maxOrder = items.length > 0 ? Math.max(...items.map(i => i.order || 0)) : 0;
     let orderCounter = maxOrder + 1;
@@ -132,14 +146,14 @@ export const ShoppingListProvider = ({ children }) => {
         if (existingItem.unit === ingredient.unit && ingredient.amount && !isNaN(parseFloat(ingredient.amount))) {
           const existingAmount = parseFloat(existingItem.amount) || 0;
           const newAmount = parseFloat(ingredient.amount) || 0;
-          updates[`${SHOPPING_LIST_PATH}/${existingItem.id}`] = {
+          updates[`${listPath}/${existingItem.id}`] = {
             ...existingItem,
             amount: (existingAmount + newAmount).toString(),
             recipes: [...(existingItem.recipes || []), recipe.title]
           };
         } else {
           const newId = Date.now().toString() + Math.random().toString(36).substring(2);
-          updates[`${SHOPPING_LIST_PATH}/${newId}`] = {
+          updates[`${listPath}/${newId}`] = {
             ...ingredient,
             checked: false,
             recipes: [recipe.title],
@@ -149,7 +163,7 @@ export const ShoppingListProvider = ({ children }) => {
         }
       } else {
         const newId = Date.now().toString() + Math.random().toString(36).substring(2);
-        updates[`${SHOPPING_LIST_PATH}/${newId}`] = {
+        updates[`${listPath}/${newId}`] = {
           ...ingredient,
           checked: false,
           recipes: [recipe.title],
@@ -171,9 +185,10 @@ export const ShoppingListProvider = ({ children }) => {
   const addItem = async (item, amount, unit, category = 'sonstiges') => {
     if (!user) return;
 
+    const listPath = getShoppingListPath(currentListType, user.uid);
     const maxOrder = items.length > 0 ? Math.max(...items.map(i => i.order || 0)) : 0;
     const newId = Date.now().toString();
-    const itemRef = ref(database, `${SHOPPING_LIST_PATH}/${newId}`);
+    const itemRef = ref(database, `${listPath}/${newId}`);
     
     try {
       await set(itemRef, {
@@ -197,7 +212,8 @@ export const ShoppingListProvider = ({ children }) => {
     const item = items.find(i => i.id === id);
     if (!item) return;
 
-    const itemRef = ref(database, `${SHOPPING_LIST_PATH}/${id}`);
+    const listPath = getShoppingListPath(currentListType, user.uid);
+    const itemRef = ref(database, `${listPath}/${id}`);
     
     try {
       await update(itemRef, {
@@ -212,7 +228,8 @@ export const ShoppingListProvider = ({ children }) => {
   const removeItem = async (id) => {
     if (!user) return;
 
-    const itemRef = ref(database, `${SHOPPING_LIST_PATH}/${id}`);
+    const listPath = getShoppingListPath(currentListType, user.uid);
+    const itemRef = ref(database, `${listPath}/${id}`);
     
     try {
       await remove(itemRef);
@@ -225,7 +242,8 @@ export const ShoppingListProvider = ({ children }) => {
   const updateItem = async (id, updates) => {
     if (!user) return;
 
-    const itemRef = ref(database, `${SHOPPING_LIST_PATH}/${id}`);
+    const listPath = getShoppingListPath(currentListType, user.uid);
+    const itemRef = ref(database, `${listPath}/${id}`);
     
     try {
       await update(itemRef, updates);
@@ -238,9 +256,10 @@ export const ShoppingListProvider = ({ children }) => {
   const reorderItems = async (reorderedItems) => {
     if (!user) return;
 
+    const listPath = getShoppingListPath(currentListType, user.uid);
     const updates = {};
     reorderedItems.forEach((item, index) => {
-      updates[`${SHOPPING_LIST_PATH}/${item.id}/order`] = index;
+      updates[`${listPath}/${item.id}/order`] = index;
     });
 
     try {
@@ -254,6 +273,7 @@ export const ShoppingListProvider = ({ children }) => {
   const sortByStoreLayout = async () => {
     if (!user) return;
 
+    const listPath = getShoppingListPath(currentListType, user.uid);
     const updates = {};
     
     // Gruppiere Items nach Kategorie
@@ -271,7 +291,7 @@ export const ShoppingListProvider = ({ children }) => {
       .forEach(category => {
         const categoryItems = itemsByCategory[category.id] || [];
         categoryItems.forEach(item => {
-          updates[`${SHOPPING_LIST_PATH}/${item.id}/order`] = order++;
+          updates[`${listPath}/${item.id}/order`] = order++;
         });
       });
 
@@ -291,10 +311,11 @@ export const ShoppingListProvider = ({ children }) => {
   const clearCheckedItems = async () => {
     if (!user) return;
 
+    const listPath = getShoppingListPath(currentListType, user.uid);
     const updates = {};
     items.forEach(item => {
       if (item.checked) {
-        updates[`${SHOPPING_LIST_PATH}/${item.id}`] = null;
+        updates[`${listPath}/${item.id}`] = null;
       }
     });
 
@@ -309,7 +330,8 @@ export const ShoppingListProvider = ({ children }) => {
   const clearAll = async () => {
     if (!user) return;
 
-    const listRef = ref(database, SHOPPING_LIST_PATH);
+    const listPath = getShoppingListPath(currentListType, user.uid);
+    const listRef = ref(database, listPath);
     
     try {
       await remove(listRef);
@@ -321,6 +343,8 @@ export const ShoppingListProvider = ({ children }) => {
   const value = {
     items,
     storeCategories,
+    currentListType,
+    setCurrentListType,
     addRecipeToList,
     addItem,
     toggleItem,
