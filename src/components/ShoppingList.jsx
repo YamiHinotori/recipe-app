@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Plus, Trash2, Edit2, Check, X, GripVertical, Store, Settings } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Check, X, GripVertical, Store, Settings, ChevronRight } from 'lucide-react';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { useProductDatabase } from '../context/ProductDatabaseContext';
 import StoreSelectorModal from './StoreSelectorModal';
@@ -32,22 +32,30 @@ const ShoppingList = () => {
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [showStoreSelector, setShowStoreSelector] = useState(false);
+  const itemInputRef = useRef(null);
 
-  const handleAddItem = async (e) => {
+  const handleAddItem = async (e, keepFormOpen = false) => {
     e.preventDefault();
     if (newItem.item.trim()) {
       // Füge das Produkt zur Datenbank hinzu falls es neu ist
       const addedProduct = await addProduct(newItem.item.trim(), newItem.category, newItem.unit || '');
-      console.log('Produkt zur DB hinzugefügt:', addedProduct);
-      
+
       // Füge zur Einkaufsliste hinzu
       await addItem(newItem.item.trim(), newItem.amount, newItem.unit, newItem.category);
       
       // Reset Form
       setNewItem({ item: '', amount: '', unit: '', category: 'sonstiges' });
-      setShowAddForm(false);
       setSearchResults([]);
       setShowSuggestions(false);
+      
+      if (keepFormOpen) {
+        // Fokus zurück auf Input für schnelles Weitermachen
+        setTimeout(() => {
+          itemInputRef.current?.focus();
+        }, 0);
+      } else {
+        setShowAddForm(false);
+      }
     }
   };
 
@@ -56,10 +64,6 @@ const ShoppingList = () => {
     
     if (value.length >= 2) {
       const results = searchProducts(value);
-      console.log('=== DEBUG SUCHE ===');
-      console.log('Suchbegriff:', value);
-      console.log('Gefundene Ergebnisse:', results);
-      console.log('Anzahl:', results.length);
       setSearchResults(results);
       setShowSuggestions(results.length > 0);
     } else {
@@ -253,12 +257,13 @@ const ShoppingList = () => {
         <div className="fixed inset-0 bg-black/50 z-20 flex items-end md:items-center justify-center">
           <div className="bg-white w-full md:w-96 md:rounded-lg p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Artikel hinzufügen</h2>
-            <form onSubmit={handleAddItem} className="space-y-4">
+            <div className="space-y-4">
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Artikel *
                 </label>
                 <input
+                  ref={itemInputRef}
                   type="text"
                   value={newItem.item}
                   onChange={(e) => handleSearchInput(e.target.value)}
@@ -351,27 +356,44 @@ const ShoppingList = () => {
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors"
-                >
-                  Hinzufügen
-                </button>
+              
+              {/* NEUE BUTTON-LOGIK */}
+              <div className="space-y-2">
+                {/* Primärer Button: Hinzufügen & Weiter */}
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setNewItem({ item: '', amount: '', unit: '', category: 'sonstiges' });
-                    setSearchResults([]);
-                    setShowSuggestions(false);
-                  }}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                  onClick={(e) => handleAddItem(e, true)}
+                  className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors font-medium flex items-center justify-center gap-2 shadow-sm"
                 >
-                  Abbrechen
+                  <Plus className="w-5 h-5" />
+                  <span>Hinzufügen & Weiter</span>
+                  <ChevronRight className="w-4 h-4" />
                 </button>
+                
+                {/* Sekundäre Buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => handleAddItem(e, false)}
+                    className="bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                  >
+                    Nur Hinzufügen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setNewItem({ item: '', amount: '', unit: '', category: 'sonstiges' });
+                      setSearchResults([]);
+                      setShowSuggestions(false);
+                    }}
+                    className="bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
