@@ -6,13 +6,13 @@ import { ShoppingListProvider } from './context/ShoppingListContext';
 import { RecipeProvider } from './context/RecipeContext';
 import { ProductDatabaseProvider } from './context/ProductDatabaseContext';
 import { StoreLayoutsProvider } from './context/StoreLayoutsContext';
-import Dashboard from './components/Dashboard.jsx';
-import Rezept from './components/Rezept.jsx';
-import ShoppingList from './components/ShoppingList.jsx';
-import AdminPanel from './components/AdminPanel.jsx';
-import ProductManager from './components/ProductManager.jsx';
-import StoresManager from './components/StoresManager.jsx';
-import Login from './components/Login.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import Rezept from './pages/Rezept.jsx';
+import ShoppingList from './pages/ShoppingList.jsx';
+import AdminPanel from './pages/AdminPanel.jsx';
+import ProductManager from './pages/ProductManager.jsx';
+import StoresManager from './pages/StoresManager.jsx';
+import Login from './pages/Login.jsx';
 import "./index.css";
 
 // Protected Route Component
