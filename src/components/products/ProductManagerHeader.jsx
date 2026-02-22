@@ -26,7 +26,7 @@ const ProductManagerHeader = ({ productCount, onBack, onAddProduct }) => {
         </button>
         
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">
             Produktdatenbank
           </h1>
           <p className="text-sm text-gray-600">

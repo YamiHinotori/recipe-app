@@ -6,6 +6,7 @@ import { ShoppingListProvider } from './context/ShoppingListContext';
 import { RecipeProvider } from './context/RecipeContext';
 import { ProductDatabaseProvider } from './context/ProductDatabaseContext';
 import { StoreLayoutsProvider } from './context/StoreLayoutsContext';
+import { MealPlannerProvider } from './context/MealPlannerContext';
 import Dashboard from './pages/Dashboard.jsx';
 import Rezept from './pages/Rezept.jsx';
 import ShoppingList from './pages/ShoppingList.jsx';
@@ -13,6 +14,7 @@ import AdminPanel from './pages/AdminPanel.jsx';
 import ProductManager from './pages/ProductManager.jsx';
 import StoresManager from './pages/StoresManager.jsx';
 import Login from './pages/Login.jsx';
+import MealPlanner from './pages/MealPlanner.jsx';
 import "./index.css";
 
 // Protected Route Component
@@ -91,6 +93,15 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route 
+          path="/wochenplaner" 
+          element={
+            <ProtectedRoute>
+              <MealPlanner />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </BrowserRouter>
   );
@@ -105,7 +116,9 @@ root.render(
         <ProductDatabaseProvider>
           <StoreLayoutsProvider>
             <ShoppingListProvider>
-              <App />
+              <MealPlannerProvider>
+                <App />
+              </MealPlannerProvider>
             </ShoppingListProvider>
           </StoreLayoutsProvider>
         </ProductDatabaseProvider>

@@ -69,6 +69,7 @@ const Dashboard = () => {
         uncheckedItemsCount={uncheckedItemsCount}
         onAdminClick={() => navigate('/admin')}
         onShoppingListClick={() => navigate('/shopping-list')}
+        onWochenplanerClick={() => navigate('/wochenplaner')}
         onLogoutClick={handleLogout}
       />
 

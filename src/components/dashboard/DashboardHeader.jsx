@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, ShoppingCart, LogOut } from 'lucide-react';
+import { Settings, ShoppingCart, LogOut, Calendar } from 'lucide-react';
 
 /**
  * DashboardHeader - Header-Bereich des Dashboards
@@ -12,6 +12,7 @@ import { Settings, ShoppingCart, LogOut } from 'lucide-react';
  * @param {number} uncheckedItemsCount - Anzahl offener Einkaufslisteneinträge
  * @param {function} onAdminClick - Callback für Admin-Button
  * @param {function} onShoppingListClick - Callback für Einkaufslisten-Button
+ * @param {function} onWochenplanerClick - Callback für Wochenplaner-Button
  * @param {function} onLogoutClick - Callback für Abmelden-Button
  */
 const DashboardHeader = ({
@@ -20,6 +21,7 @@ const DashboardHeader = ({
   uncheckedItemsCount,
   onAdminClick,
   onShoppingListClick,
+  onWochenplanerClick,
   onLogoutClick
 }) => {
   return (
@@ -31,8 +33,8 @@ const DashboardHeader = ({
           
           {/* Titel-Bereich */}
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-              🍳 Meine Rezepte
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+              Rezepte
             </h1>
             <p className="text-gray-600">
               {recipeCount} {recipeCount === 1 ? 'Rezept' : 'Rezepte'} gefunden
@@ -50,6 +52,15 @@ const DashboardHeader = ({
               aria-label="Admin Panel öffnen"
             >
               <Settings className="w-5 h-5" />
+            </button>
+
+            <button
+                onClick={onWochenplanerClick}
+                className="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors shadow-lg"
+                title="Wochenplaner"
+                aria-label="Wochenplaner öffnen"
+            >
+                <Calendar className="w-5 h-5" />
             </button>
 
             {/* Einkaufsliste Button mit Badge */}
