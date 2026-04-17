@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { UtensilsCrossed, ShoppingCart, CalendarDays, Settings } from 'lucide-react';
 import { useShoppingList } from '../../context/ShoppingListContext';
@@ -16,6 +16,23 @@ const BottomNav = () => {
   const { items } = useShoppingList();
 
   const uncheckedCount = items.filter(i => !i.checked).length;
+
+  // Ausblenden bei kleiner Viewport-Höhe (z.B. Split-Screen).
+  // visualViewport ist im PWA-Standalone-Mode zuverlässiger als window.innerHeight.
+  const getHeight = () => window.visualViewport?.height ?? window.innerHeight;
+  const [isShortScreen, setIsShortScreen] = useState(getHeight() < 500);
+  useEffect(() => {
+    const handleResize = () => setIsShortScreen(getHeight() < 500);
+    const viewport = window.visualViewport;
+    if (viewport) {
+      viewport.addEventListener('resize', handleResize);
+      return () => viewport.removeEventListener('resize', handleResize);
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  if (isShortScreen) return null;
 
   const tabs = [
     { icon: UtensilsCrossed, label: 'Rezepte',        to: '/' },
