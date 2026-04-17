@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { useAuth } from '../context/AuthContext';
@@ -50,6 +50,37 @@ const Dashboard = () => {
    */
   const uncheckedItemsCount = items.filter(item => !item.checked).length;
 
+  // Swipe-Geste zum Wechseln der Kategorie
+  const touchStart = useRef(null);
+
+  const handleTouchStart = (e) => {
+    touchStart.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchStart.current) return;
+    const deltaX = e.changedTouches[0].clientX - touchStart.current.x;
+    const deltaY = e.changedTouches[0].clientY - touchStart.current.y;
+    touchStart.current = null;
+
+    // Nur auslösen wenn horizontale Bewegung dominiert (kein versehentliches Scrollen)
+    if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY) * 1.5) return;
+
+    const currentIndex = categories.indexOf(selectedCategory);
+    if (deltaX < 0) {
+      // Wisch nach links → nächste Kategorie
+      const next = categories[(currentIndex + 1) % categories.length];
+      setSelectedCategory(next);
+    } else {
+      // Wisch nach rechts → vorherige Kategorie
+      const prev = categories[(currentIndex - 1 + categories.length) % categories.length];
+      setSelectedCategory(prev);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
       
@@ -72,12 +103,14 @@ const Dashboard = () => {
         onCategoryChange={setSelectedCategory}
       />
 
-      {/* Grid mit allen Rezepten */}
-      <RecipeGrid
-        recipes={filteredRecipes}
-        loading={loading}
-        onRecipeClick={handleRecipeClick}
-      />
+      {/* Grid mit allen Rezepten – Swipe links/rechts wechselt Kategorie */}
+      <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <RecipeGrid
+          recipes={filteredRecipes}
+          loading={loading}
+          onRecipeClick={handleRecipeClick}
+        />
+      </div>
     </div>
   );
 };
