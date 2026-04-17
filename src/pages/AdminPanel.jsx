@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Plus, Package, Users, UserCog } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
-import { useAdmin } from '../context/AdminContext';
 import RecipeForm from '../components/admin/RecipeForm';
 import RecipeCard from '../components/admin/RecipeCard';
 import MessageBanner from '../components/global/MessageBanner';
@@ -20,7 +19,6 @@ import MessageBanner from '../components/global/MessageBanner';
 const AdminPanel = () => {
   const navigate = useNavigate();
   const { recipes, addRecipe, updateRecipe, deleteRecipe } = useRecipes();
-  const { isAdmin } = useAdmin();
   
   // UI-Zustand für Formular-Modal
   const [showForm, setShowForm] = useState(false);
@@ -97,71 +95,36 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
-      {/* Sticky Header mit Navigation und Aktions-Buttons */}
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
+
+      {/* Sticky Header – nur Titel und primäre Aktion */}
       <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
+
             {/* Zurück-Button und Titel */}
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/settings')}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 aria-label="Zurück zur Startseite"
               >
                 <ArrowLeft className="w-6 h-6 text-gray-700" />
               </button>
               <div>
-                <h1 className="text-xl md:text-2xl font-bold text-gray-800">Admin Panel</h1>
+                <h1 className="text-xl md:text-2xl font-bold text-gray-800">Rezepte verwalten</h1>
                 <p className="text-sm text-gray-600">{recipes.length} Rezepte</p>
               </div>
             </div>
-            
-            {/* Aktions-Buttons */}
-            <div className="flex items-center gap-2">
-              
-              {/* Nutzerverwaltung - NUR FÜR ADMINS */}
-              {isAdmin && (
-                <button
-                  onClick={() => navigate('/admin/users')}
-                  className="bg-purple-500 text-white p-2 md:px-4 md:py-2 rounded-lg hover:bg-purple-600 transition-colors flex items-center gap-2"
-                  title="Nutzerverwaltung"
-                >
-                  <UserCog className="w-5 h-5" />
-                  <span className="hidden md:inline">Nutzer verwalten</span>
-                </button>
-              )}
 
-              {/* Gruppenverwaltung */}
-              <button 
-                onClick={() => navigate('/gruppe')}
-                className="bg-green-500 text-white p-2 md:px-4 md:py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
-                title="Gruppenverwaltung"
-              >
-                <Users className="w-5 h-5"/>
-                <span className="hidden md:inline">Gruppenverwaltung</span>
-              </button>
-              
-              {/* Produktverwaltung */}
-              <button
-                onClick={() => navigate('/products')}
-                className="bg-blue-500 text-white p-2 md:px-4 md:py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
-                title="Produkte verwalten"
-              >
-                <Package className="w-5 h-5" />
-                <span className="hidden md:inline">Produkte verwalten</span>
-              </button>
-              
-              {/* Neues Rezept erstellen */}
-              <button
-                onClick={handleCreate}
-                className="bg-orange-500 text-white p-2 md:px-4 md:py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
-                title="Neues Rezept"
-              >
-                <Plus className="w-5 h-5" />
-                <span className="hidden md:inline">Neues Rezept</span>
-              </button>
-            </div>
+            {/* Primäre Aktion: Neues Rezept */}
+            <button
+              onClick={handleCreate}
+              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2 font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Neues Rezept</span>
+            </button>
           </div>
         </div>
       </div>
@@ -181,7 +144,7 @@ const AdminPanel = () => {
       )}
 
       {/* Grid mit allen Rezepten */}
-      <div className="max-w-7xl mx-auto px-4 mt-6">
+      <div className="max-w-7xl mx-auto px-4 mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {recipes.map(recipe => (
             <RecipeCard

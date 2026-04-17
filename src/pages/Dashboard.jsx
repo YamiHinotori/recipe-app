@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Settings, ShoppingCart, LogOut } from 'lucide-react';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { useAuth } from '../context/AuthContext';
 import { useRecipes } from '../context/RecipeContext';
@@ -21,7 +20,7 @@ import { filterRecipes, getUniqueCategories } from '../utils/recipeFilters';
 const Dashboard = () => {
   const navigate = useNavigate();
   const { items } = useShoppingList();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { recipes, loading } = useRecipes();
   
   // Filter-Zustand
@@ -45,14 +44,6 @@ const Dashboard = () => {
     navigate(`/recipe/${id}`);
   };
 
-  /**
-   * Meldet Benutzer nach Bestätigung ab
-   */
-  const handleLogout = async () => {
-    if (window.confirm('Möchtest du dich wirklich abmelden?')) {
-      await logout();
-    }
-  };
 
   /**
    * Anzahl nicht abgehakter Einkaufslisteneinträge
@@ -60,17 +51,16 @@ const Dashboard = () => {
   const uncheckedItemsCount = items.filter(item => !item.checked).length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
       
       {/* Header mit Titel, User-Info und Aktions-Buttons */}
       <DashboardHeader
         user={user}
         recipeCount={filteredRecipes.length}
         uncheckedItemsCount={uncheckedItemsCount}
-        onAdminClick={() => navigate('/admin')}
+        onAdminClick={() => navigate('/settings')}
         onShoppingListClick={() => navigate('/shopping-list')}
         onWochenplanerClick={() => navigate('/wochenplaner')}
-        onLogoutClick={handleLogout}
       />
 
       {/* Suche und Kategorie-Filter */}

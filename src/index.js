@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { HashRouter, Routes, Route, Navigate } from "react-router";
+import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router";
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ShoppingListProvider } from './context/ShoppingListContext';
 import { RecipeProvider } from './context/RecipeContext';
@@ -16,6 +16,8 @@ import StoresManager from './pages/StoresManager.jsx';
 import Login from './pages/Login.jsx';
 import MealPlanner from './pages/MealPlanner.jsx';
 import InvitationModal from './components/global/InvitationModal.jsx';
+import BottomNav from './components/global/BottomNav.jsx';
+import Settings from './pages/Settings.jsx';
 import "./index.css";
 import { migrateUserToV2 } from './utils/migrateToV2';
 import { GroupProvider } from './context/GroupContext.jsx';
@@ -27,17 +29,19 @@ import { CategoriesProvider } from './context/CategoriesContext';
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
-  
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  
+
   return children;
 };
 
-// App Component mit Routes
-const App = () => {
+// Innerer App-Bereich – benötigt useLocation (muss innerhalb von HashRouter sein)
+const AppInner = () => {
   const { user, pendingInvitation, acceptInvitation, declineInvitation } = useAuth();
+  const { pathname } = useLocation();
+  const showBottomNav = !!user && pathname !== '/login';
 
   return (
     <>
@@ -50,12 +54,11 @@ const App = () => {
         />
       )}
 
-      <HashRouter>
-        <Routes>
-          <Route 
-            path="/login" 
-            element={user ? <Navigate to="/" replace /> : <Login />} 
-          />
+      <Routes>
+        <Route
+          path="/login"
+          element={user ? <Navigate to="/" replace /> : <Login />}
+        />
 
           <Route
             path="/migrate"
@@ -151,15 +154,33 @@ const App = () => {
             path="/admin/users"
             element={
               <ProtectedRoute>
-                <UserManagement/> 
+                <UserManagement/>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             }
           />
         </Routes>
-      </HashRouter>
+
+        {/* Mobile Bottom-Navigation (nur sichtbar auf kleinen Bildschirmen) */}
+        {showBottomNav && <BottomNav />}
     </>
   );
 };
+
+// App Component mit HashRouter
+const App = () => (
+  <HashRouter>
+    <AppInner />
+  </HashRouter>
+);
 
 // Root Render
 const root = ReactDOM.createRoot(document.getElementById('root'));

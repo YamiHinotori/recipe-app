@@ -22,7 +22,7 @@ const SearchAndFilter = ({
   onCategoryChange
 }) => {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
+    <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
       
       {/* Suchleiste */}
       <div className="relative">

@@ -23,30 +23,32 @@ const EditableItem = ({
   onCancelEdit
 }) => {
   return (
-    <div className="flex-1 space-y-2">
-      
-      {/* Artikel-Name, Menge, Einheit */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={editForm.item}
-          onChange={(e) => onEditFormChange({ ...editForm, item: e.target.value })}
-          className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Artikel"
-          autoFocus
-        />
+    <div className="flex-1 min-w-0 space-y-2">
+
+      {/* Artikel-Name (volle Breite) */}
+      <input
+        type="text"
+        value={editForm.item}
+        onChange={(e) => onEditFormChange({ ...editForm, item: e.target.value })}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+        placeholder="Artikel"
+        autoFocus
+      />
+
+      {/* Menge und Einheit nebeneinander */}
+      <div className="grid grid-cols-2 gap-2">
         <input
           type="text"
           value={editForm.amount}
           onChange={(e) => onEditFormChange({ ...editForm, amount: e.target.value })}
-          className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           placeholder="Menge"
         />
         <input
           type="text"
           value={editForm.unit}
           onChange={(e) => onEditFormChange({ ...editForm, unit: e.target.value })}
-          className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           placeholder="Einheit"
         />
       </div>
@@ -55,7 +57,7 @@ const EditableItem = ({
       <select
         value={editForm.category}
         onChange={(e) => onEditFormChange({ ...editForm, category: e.target.value })}
-        className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       >
         {storeCategories.map(cat => (
           <option key={cat.id} value={cat.id}>
@@ -65,19 +67,19 @@ const EditableItem = ({
       </select>
 
       {/* Speichern / Abbrechen */}
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <button
           onClick={onSaveEdit}
-          className="flex-1 p-2 text-green-600 hover:bg-green-50 rounded font-medium text-sm transition-colors"
+          className="flex items-center justify-center gap-1 py-2 bg-green-500 text-white rounded-lg font-medium text-sm hover:bg-green-600 transition-colors"
         >
-          <Check className="w-5 h-5 inline mr-1" />
+          <Check className="w-4 h-4" />
           Speichern
         </button>
         <button
           onClick={onCancelEdit}
-          className="flex-1 p-2 text-red-600 hover:bg-red-50 rounded font-medium text-sm transition-colors"
+          className="flex items-center justify-center gap-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-200 transition-colors"
         >
-          <X className="w-5 h-5 inline mr-1" />
+          <X className="w-4 h-4" />
           Abbrechen
         </button>
       </div>

@@ -271,7 +271,7 @@ const ShoppingList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-28 md:pb-8">
       
       {/* Laden-Auswahl Modal */}
       <StoreSelectorModal
@@ -286,7 +286,6 @@ const ShoppingList = () => {
           <ShoppingListHeader
             itemCount={uncheckedItems.length}
             onBack={() => navigate('/')}
-            onManageStores={() => navigate('/stores')}
             onSortByStore={handleSortByStore}
             onAddItem={() => setShowAddForm(true)}
             showSortButton={uncheckedItems.length > 1}

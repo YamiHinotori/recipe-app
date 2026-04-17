@@ -65,7 +65,7 @@ const RecipeView = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
       
       {/* Modal zur Listen-Auswahl */}
       <ShoppingListSelectorModal

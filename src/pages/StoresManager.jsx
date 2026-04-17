@@ -170,7 +170,7 @@ const StoresManager = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
       
       {/* Layout-Editor Modal */}
       <StoreLayoutEditor
@@ -183,7 +183,7 @@ const StoresManager = () => {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <StoresManagerHeader
             storeCount={storeLayouts.length}
-            onBack={() => navigate('/shopping-list')}
+            onBack={() => navigate('/settings')}
             onAddStore={() => setShowAddForm(true)}
           />
         </div>

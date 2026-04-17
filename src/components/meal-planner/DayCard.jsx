@@ -27,8 +27,8 @@ const DayCard = ({ dayKey, dayLabel, meal, onClick }) => {
         </h3>
         
         {/* Leerer Zustand */}
-        <div className="flex flex-col items-center justify-center py-8 text-gray-400 group-hover:text-blue-500 transition-colors">
-          <Plus className="w-12 h-12 mb-2" />
+        <div className="flex flex-col items-center justify-center py-4 text-gray-400 group-hover:text-blue-500 transition-colors">
+          <Plus className="w-10 h-10 mb-1" />
           <p className="text-sm font-medium">Mahlzeit planen</p>
         </div>
       </div>

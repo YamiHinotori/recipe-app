@@ -30,21 +30,23 @@ const RecipeForm = ({ editingId, onSave, onCancel }) => {
   } = useRecipeForm(editingId, onSave);
 
   return (
-    // Vollbild-Overlay mit Scroll-Unterstützung
-    <div className="fixed inset-0 bg-black/50 z-20 overflow-y-auto">
-      <div className="min-h-screen flex items-start justify-center p-4 py-8">
-        <div className="bg-white rounded-lg max-w-3xl w-full">
-          
-          {/* Modal-Header */}
-          <ModalHeader
-            icon={<ChefHat className="w-5 h-5 text-orange-600" />}
-            title={editingId ? 'Rezept bearbeiten' : 'Neues Rezept'}
-            onClose={onCancel}
-            iconBgColor="bg-orange-100"
-          />
+    // Mobile: Vollbild. Desktop: zentriertes Modal mit Overlay.
+    <div className="fixed inset-0 z-[60] bg-white overflow-y-auto md:bg-black/50">
+      <div className="md:min-h-screen md:flex md:items-start md:justify-center md:p-8">
+        <div className="w-full md:bg-white md:rounded-lg md:max-w-3xl">
 
-          {/* Formular mit scrollbarem Inhalt */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+          {/* Header sticky damit er beim Scrollen sichtbar bleibt */}
+          <div className="sticky top-0 z-10 bg-white">
+            <ModalHeader
+              icon={<ChefHat className="w-5 h-5 text-orange-600" />}
+              title={editingId ? 'Rezept bearbeiten' : 'Neues Rezept'}
+              onClose={onCancel}
+              iconBgColor="bg-orange-100"
+            />
+          </div>
+
+          {/* Formular – kein eigenes Scroll mehr, Outer-Container scrollt */}
+          <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6">
             
             {/* === GRUNDINFORMATIONEN === */}
             <div className="space-y-4">
@@ -240,6 +242,7 @@ const RecipeForm = ({ editingId, onSave, onCancel }) => {
       </div>
     </div>
   );
+
 };
 
 export default RecipeForm;

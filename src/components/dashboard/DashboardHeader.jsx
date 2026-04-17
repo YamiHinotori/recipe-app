@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, ShoppingCart, LogOut, Calendar } from 'lucide-react';
+import { Settings, ShoppingCart, Calendar } from 'lucide-react';
 
 /**
  * DashboardHeader - Header-Bereich des Dashboards
@@ -21,8 +21,7 @@ const DashboardHeader = ({
   uncheckedItemsCount,
   onAdminClick,
   onShoppingListClick,
-  onWochenplanerClick,
-  onLogoutClick
+  onWochenplanerClick
 }) => {
   return (
     <div className="bg-white shadow-sm border-b border-gray-200">
@@ -41,29 +40,30 @@ const DashboardHeader = ({
             </p>
           </div>
           
-          {/* Aktions-Buttons */}
-          <div className="flex items-center gap-3">
-            
-            {/* Admin Panel Button */}
+          {/* Aktions-Buttons – auf Mobile alles über Bottom-Nav erreichbar */}
+          <div className="hidden md:flex items-center gap-3">
+
+            {/* Einstellungen */}
             <button
               onClick={onAdminClick}
-              className="bg-purple-500 text-white p-3 rounded-full hover:bg-purple-600 transition-colors shadow-lg"
-              title="Admin Panel"
-              aria-label="Admin Panel öffnen"
+              className="bg-violet-500 text-white p-3 rounded-full hover:bg-violet-600 transition-colors shadow-lg"
+              title="Einstellungen"
+              aria-label="Einstellungen öffnen"
             >
               <Settings className="w-5 h-5" />
             </button>
 
+            {/* Wochenplaner */}
             <button
-                onClick={onWochenplanerClick}
-                className="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors shadow-lg"
-                title="Wochenplaner"
-                aria-label="Wochenplaner öffnen"
+              onClick={onWochenplanerClick}
+              className="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors shadow-lg"
+              title="Wochenplaner"
+              aria-label="Wochenplaner öffnen"
             >
-                <Calendar className="w-5 h-5" />
+              <Calendar className="w-5 h-5" />
             </button>
 
-            {/* Einkaufsliste Button mit Badge */}
+            {/* Einkaufsliste mit Badge */}
             <button
               onClick={onShoppingListClick}
               className="relative bg-green-500 text-white p-3 rounded-full hover:bg-green-600 transition-colors shadow-lg"
@@ -71,8 +71,6 @@ const DashboardHeader = ({
               aria-label={`Einkaufsliste öffnen (${uncheckedItemsCount} offene Einträge)`}
             >
               <ShoppingCart className="w-6 h-6" />
-              
-              {/* Badge mit Anzahl offener Einträge */}
               {uncheckedItemsCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                   {uncheckedItemsCount}
@@ -80,15 +78,6 @@ const DashboardHeader = ({
               )}
             </button>
 
-            {/* Abmelden Button */}
-            <button
-              onClick={onLogoutClick}
-              className="bg-gray-200 text-gray-700 p-3 rounded-full hover:bg-gray-300 transition-colors"
-              title="Abmelden"
-              aria-label="Abmelden"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
           </div>
         </div>
 

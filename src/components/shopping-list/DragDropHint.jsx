@@ -8,7 +8,7 @@ import { GripVertical } from 'lucide-react';
  */
 const DragDropHint = () => {
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-3">
+    <div className="hidden md:flex bg-blue-50 border border-blue-200 rounded-lg p-3 items-start gap-3">
       <GripVertical className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
       <div>
         <p className="text-sm text-blue-800 font-medium">

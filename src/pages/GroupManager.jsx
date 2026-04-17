@@ -138,9 +138,9 @@ const GroupManager = () => {
             {/* Zurück-Button und Titel */}
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate('/settings')}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                aria-label="Zurück zum Admin Panel"
+                aria-label="Zurück zu Einstellungen"
               >
                 <ArrowLeft className="w-6 h-6 text-gray-700" />
               </button>
