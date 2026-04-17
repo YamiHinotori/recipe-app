@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <title>Rezepte App</title>
+    <script>
+      // GitHub Pages SPA-Workaround:
+      // Leitet unbekannte Routen zur App-Basis weiter.
+      // Der HashRouter übernimmt danach das Routing.
+      var base = window.location.pathname.split('/').slice(0, 2).join('/') + '/';
+      window.location.replace(base + window.location.hash);
+    </script>
+  </head>
+  <body></body>
+</html>
