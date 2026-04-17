@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Plus, Package } from 'lucide-react';
+import { ArrowLeft, Plus, Package, Users, UserCog } from 'lucide-react';
 import { useRecipes } from '../context/RecipeContext';
+import { useAdmin } from '../context/AdminContext';
 import RecipeForm from '../components/admin/RecipeForm';
 import RecipeCard from '../components/admin/RecipeCard';
 import MessageBanner from '../components/global/MessageBanner';
@@ -13,11 +14,13 @@ import MessageBanner from '../components/global/MessageBanner';
  * - Anzeige aller Rezepte in einer Grid-Ansicht
  * - Öffnen des Formulars zum Erstellen/Bearbeiten
  * - Löschen von Rezepten
- * - Navigation zu Produktverwaltung
+ * - Navigation zu Produktverwaltung, Gruppenverwaltung
+ * - Navigation zu Nutzerverwaltung (nur für Admins)
  */
 const AdminPanel = () => {
   const navigate = useNavigate();
   const { recipes, addRecipe, updateRecipe, deleteRecipe } = useRecipes();
+  const { isAdmin } = useAdmin();
   
   // UI-Zustand für Formular-Modal
   const [showForm, setShowForm] = useState(false);
@@ -116,6 +119,29 @@ const AdminPanel = () => {
             
             {/* Aktions-Buttons */}
             <div className="flex items-center gap-2">
+              
+              {/* Nutzerverwaltung - NUR FÜR ADMINS */}
+              {isAdmin && (
+                <button
+                  onClick={() => navigate('/admin/users')}
+                  className="bg-purple-500 text-white p-2 md:px-4 md:py-2 rounded-lg hover:bg-purple-600 transition-colors flex items-center gap-2"
+                  title="Nutzerverwaltung"
+                >
+                  <UserCog className="w-5 h-5" />
+                  <span className="hidden md:inline">Nutzer verwalten</span>
+                </button>
+              )}
+
+              {/* Gruppenverwaltung */}
+              <button 
+                onClick={() => navigate('/gruppe')}
+                className="bg-green-500 text-white p-2 md:px-4 md:py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
+                title="Gruppenverwaltung"
+              >
+                <Users className="w-5 h-5"/>
+                <span className="hidden md:inline">Gruppenverwaltung</span>
+              </button>
+              
               {/* Produktverwaltung */}
               <button
                 onClick={() => navigate('/products')}

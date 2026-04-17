@@ -1,17 +1,17 @@
 import React from 'react';
-import { Clock, Users, ChefHat } from 'lucide-react';
+import { Clock, Users, ChefHat, User } from 'lucide-react';
 
 /**
- * DashboardRecipeCard - Rezeptkarte für Dashboard-Ansicht
+ * DashboardRecipeCard - Vereinfachte Version
  * 
- * Zeigt Rezept mit Bild, Meta-Informationen und Tags
- * Anders als AdminRecipeCard: Clickable, keine Edit/Delete Buttons
- * 
- * Props:
- * @param {object} recipe - Das anzuzeigende Rezept
- * @param {function} onClick - Callback beim Klick auf die Karte
+ * Zeigt nur noch:
+ * - "Von Max" wenn Rezept von anderem Gruppenmitglied
+ * - KEIN Gruppen-Badge mehr (alle Rezepte sind private!)
  */
 const DashboardRecipeCard = ({ recipe, onClick }) => {
+  const isOwnRecipe = recipe._isOwn;
+  const creatorName = recipe._creatorName;
+
   return (
     <div
       onClick={onClick}
@@ -44,6 +44,14 @@ const DashboardRecipeCard = ({ recipe, onClick }) => {
         <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-1">
           {recipe.title}
         </h3>
+
+        {/* Creator-Info (nur wenn NICHT von dir) */}
+        {!isOwnRecipe && creatorName && creatorName !== 'Du' && (
+          <div className="flex items-center gap-1 text-sm text-blue-600 mb-2 bg-blue-50 px-2 py-1 rounded-md w-fit">
+            <User className="w-4 h-4" />
+            <span>Von {creatorName}</span>
+          </div>
+        )}
 
         {/* Beschreibung (max. 2 Zeilen) */}
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">

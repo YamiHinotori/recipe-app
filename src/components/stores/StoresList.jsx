@@ -5,9 +5,10 @@ import StoreCard from './StoreCard';
  * StoresList - Grid-Liste aller Läden
  * 
  * Zeigt alle Läden als Karten in responsivem Grid
+ * Stores haben jetzt _isOwn Property für Ownership-Checks
  * 
  * Props:
- * @param {array} stores - Alle Läden
+ * @param {array} stores - Alle Läden (mit _isOwn, _ownerId)
  * @param {string} selectedStoreId - ID des ausgewählten Ladens
  * @param {string} editingId - ID des aktuell umbenannten Ladens
  * @param {string} editName - Neuer Name beim Umbenennen

@@ -7,6 +7,7 @@ import RecipeHeader from '../components/recipe-view/RecipeHeader';
 import RecipeMetaBar from '../components/recipe-view/RecipeMetaBar';
 import RecipeTags from '../components/recipe-view/RecipeTags';
 import AddToShoppingListButton from '../components/recipe-view/AddToShoppingListButton';
+import ShoppingListSelectorModal from '../components/recipe-view/ShoppingListSelectorModal';
 import IngredientsList from '../components/recipe-view/IngredientsList';
 import InstructionsList from '../components/recipe-view/InstructionsList';
 import RecipeNotes from '../components/recipe-view/RecipeNotes';
@@ -17,29 +18,43 @@ import RecipeNotFound from '../components/recipe-view/RecipeNotFound';
  * 
  * Funktionen:
  * - Anzeige aller Rezept-Details
- * - Zur Einkaufsliste hinzufügen
+ * - Zur Einkaufsliste hinzufügen (mit Auswahl persönlich/gemeinsam)
  * - Responsive Hero-Image
  * - Strukturierte Zutaten und Zubereitung
  */
 const RecipeView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addRecipeToList } = useShoppingList();
+  const { addRecipeToList, hasGroup, scope, setScope } = useShoppingList();
   const { recipes } = useRecipes();
   
   // Finde Rezept anhand ID
   const recipe = recipes.find(r => r.id === id);
   
-  // Erfolgs-Anzeige für "Zur Liste hinzugefügt"
+  // UI-Zustand
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showListSelector, setShowListSelector] = useState(false);
 
   /**
-   * Fügt Rezept zur Einkaufsliste hinzu
+   * Öffnet Modal zur Listen-Auswahl
    */
-  const handleAddToShoppingList = () => {
-    addRecipeToList(recipe);
+  const handleAddToShoppingListClick = () => {
+    setShowListSelector(true);
+  };
+
+  /**
+   * Fügt Rezept zur ausgewählten Liste hinzu
+   * @param {string} selectedScope - 'private' oder 'group'
+   */
+  const handleListSelected = (selectedScope) => {
+    // Übergebe scope DIREKT an addRecipeToList
+    addRecipeToList(recipe, selectedScope);
+    
+    // Zeige Erfolg
     setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 2000);
+    setTimeout(() => {
+      setShowSuccess(false);
+    }, 2000);
   };
 
   /**
@@ -52,6 +67,14 @@ const RecipeView = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
       
+      {/* Modal zur Listen-Auswahl */}
+      <ShoppingListSelectorModal
+        isOpen={showListSelector}
+        onClose={() => setShowListSelector(false)}
+        onSelectList={handleListSelected}
+        hasGroup={hasGroup}
+      />
+
       {/* Floating Back-Button */}
       <BackButton onClick={() => navigate('/')} />
 
@@ -81,7 +104,7 @@ const RecipeView = () => {
       {/* Zur Einkaufsliste Button */}
       <div className="max-w-4xl mx-auto px-4 mt-6">
         <AddToShoppingListButton
-          onClick={handleAddToShoppingList}
+          onClick={handleAddToShoppingListClick}
           showSuccess={showSuccess}
         />
       </div>

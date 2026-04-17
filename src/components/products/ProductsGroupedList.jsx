@@ -3,27 +3,25 @@ import CategoryGroup from './CategoryGroup';
 import { getCategoryName } from '../../utils/productHelpers';
 
 /**
- * ProductsGroupedList - Liste aller Produkte gruppiert nach Kategorien
- * 
- * Zeigt Produkte sortiert nach Kategorien mit Header
+ * ProductsGroupedList - ANGEPASST für editingProduct statt editingId
  * 
  * Props:
- * @param {object} groupedProducts - Produkte gruppiert nach Kategorie {categoryId: [products]}
- * @param {array} products - Alle Produkte (für Index-Berechnung)
+ * @param {object} groupedProducts - Produkte gruppiert nach Kategorie
+ * @param {array} products - Alle Produkte
  * @param {array} categories - Verfügbare Kategorien
- * @param {number} editingId - ID des aktuell bearbeiteten Produkts
+ * @param {object} editingProduct - Aktuell bearbeitetes Produkt (mit _ownerId, _originalIndex)
  * @param {object} editForm - Formular-Daten für Bearbeitung
- * @param {function} onStartEdit - Callback zum Starten der Bearbeitung
+ * @param {function} onStartEdit - Callback zum Starten (bekommt product)
  * @param {function} onSaveEdit - Callback zum Speichern
  * @param {function} onCancelEdit - Callback zum Abbrechen
  * @param {function} onEditFormChange - Callback bei Formular-Änderung
- * @param {function} onDelete - Callback zum Löschen
+ * @param {function} onDelete - Callback zum Löschen (bekommt product)
  */
 const ProductsGroupedList = ({
   groupedProducts,
   products,
   categories,
-  editingId,
+  editingProduct,  // ← Geändert von editingId!
   editForm,
   onStartEdit,
   onSaveEdit,
@@ -51,7 +49,7 @@ const ProductsGroupedList = ({
           products={categoryProducts}
           allProducts={products}
           categories={categories}
-          editingId={editingId}
+          editingProduct={editingProduct}  // ← Geändert!
           editForm={editForm}
           onStartEdit={onStartEdit}
           onSaveEdit={onSaveEdit}

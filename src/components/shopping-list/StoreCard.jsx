@@ -44,7 +44,7 @@ const StoreCard = ({ store, isSelected, onSelect }) => {
               {store.name}
             </p>
             <p className="text-sm text-gray-500">
-              {store.categories?.length || 0} Kategorien
+              {store.categoryOrder?.length || 0} Kategorien
             </p>
           </div>
         </div>

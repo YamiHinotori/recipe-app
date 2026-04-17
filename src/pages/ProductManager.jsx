@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useProductDatabase } from '../context/ProductDatabaseContext';
-import { useShoppingList } from '../context/ShoppingListContext';
+import { useCategories } from '../context/CategoriesContext';  // ← GEÄNDERT!
 import ProductManagerHeader from '../components/products/ProductManagerHeader';
 import AddProductModal from '../components/products/AddProductModal';
 import SearchBar from '../components/products/SearchBar';
@@ -11,18 +11,14 @@ import EmptyState from '../components/global/EmptyState';
 import { groupProductsByCategory, getCategoryName } from '../utils/productHelpers';
 
 /**
- * ProductManager - Verwaltung der Produktdatenbank
+ * ProductManager - FINALE VERSION mit CategoriesContext
  * 
- * Funktionen:
- * - Produkte hinzufügen, bearbeiten, löschen
- * - Suche nach Produktname oder Kategorie
- * - Gruppierung nach Kategorien
- * - Kategorie und Einheit verwalten
+ * Nutzt jetzt globale Kategorien aus CategoriesContext!
  */
 const ProductManager = () => {
   const navigate = useNavigate();
-  const { products, addProduct } = useProductDatabase();
-  const { storeCategories } = useShoppingList();
+  const { products, addProduct, updateProduct, deleteProduct } = useProductDatabase();
+  const { categories: storeCategories } = useCategories();  // ← GEÄNDERT!
   
   // UI-Zustand
   const [showAddForm, setShowAddForm] = useState(false);
@@ -31,7 +27,7 @@ const ProductManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Bearbeiten
-  const [editingId, setEditingId] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', category: '', commonUnit: '' });
   
   // Neues Produkt
@@ -63,9 +59,15 @@ const ProductManager = () => {
 
   /**
    * Startet Bearbeitungs-Modus
+   * NUR für eigene Produkte!
    */
-  const handleStartEdit = (product, index) => {
-    setEditingId(index);
+  const handleStartEdit = (product) => {
+    if (!product._isOwn) {
+      showMessage('error', 'Du kannst nur deine eigenen Produkte bearbeiten');
+      return;
+    }
+
+    setEditingProduct(product);
     setEditForm({
       name: product.name,
       category: product.category,
@@ -76,28 +78,16 @@ const ProductManager = () => {
   /**
    * Speichert bearbeitetes Produkt
    */
-  const handleSaveEdit = async (index) => {
-    if (!editForm.name.trim()) return;
+  const handleSaveEdit = async () => {
+    if (!editForm.name.trim() || !editingProduct) return;
 
     try {
-      const newProducts = [...products];
-      newProducts[index] = {
-        name: editForm.name.trim(),
-        category: editForm.category,
-        commonUnit: editForm.commonUnit
-      };
-
-      // Firebase direkt aktualisieren
-      const { database } = await import('../firebaseConfig');
-      const { ref, set } = await import('firebase/database');
-      const productsRef = ref(database, 'productDatabase');
-      await set(productsRef, newProducts);
-
+      await updateProduct(editingProduct, editForm);
       showMessage('success', 'Produkt aktualisiert!');
-      setEditingId(null);
+      setEditingProduct(null);
     } catch (error) {
       console.error('Fehler beim Aktualisieren:', error);
-      showMessage('error', 'Fehler beim Aktualisieren');
+      showMessage('error', error.message || 'Fehler beim Aktualisieren');
     }
   };
 
@@ -105,28 +95,28 @@ const ProductManager = () => {
    * Bricht Bearbeitung ab
    */
   const handleCancelEdit = () => {
-    setEditingId(null);
+    setEditingProduct(null);
     setEditForm({ name: '', category: '', commonUnit: '' });
   };
 
   /**
    * Löscht Produkt nach Bestätigung
+   * NUR eigene Produkte!
    */
-  const handleDelete = async (index) => {
+  const handleDelete = async (product) => {
+    if (!product._isOwn) {
+      showMessage('error', 'Du kannst nur deine eigenen Produkte löschen');
+      return;
+    }
+
     if (!window.confirm('Produkt wirklich löschen?')) return;
 
     try {
-      const newProducts = products.filter((_, i) => i !== index);
-
-      const { database } = await import('../firebaseConfig');
-      const { ref, set } = await import('firebase/database');
-      const productsRef = ref(database, 'productDatabase');
-      await set(productsRef, newProducts);
-
+      await deleteProduct(product);
       showMessage('success', 'Produkt gelöscht!');
     } catch (error) {
       console.error('Fehler beim Löschen:', error);
-      showMessage('error', 'Fehler beim Löschen');
+      showMessage('error', error.message || 'Fehler beim Löschen');
     }
   };
 
@@ -144,7 +134,7 @@ const ProductManager = () => {
       setShowAddForm(false);
     } catch (error) {
       console.error('Fehler beim Hinzufügen:', error);
-      showMessage('error', 'Fehler beim Hinzufügen');
+      showMessage('error', error.message || 'Fehler beim Hinzufügen');
     }
   };
 
@@ -206,7 +196,7 @@ const ProductManager = () => {
             groupedProducts={groupedProducts}
             products={products}
             categories={storeCategories}
-            editingId={editingId}
+            editingProduct={editingProduct}
             editForm={editForm}
             onStartEdit={handleStartEdit}
             onSaveEdit={handleSaveEdit}

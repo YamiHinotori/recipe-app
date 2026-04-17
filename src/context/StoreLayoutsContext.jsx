@@ -1,94 +1,32 @@
 /**
- * StoreLayoutsContext - Verwaltung von Laden-Layouts
+ * StoreLayoutsContext - VEREINFACHT wie Recipes/Products
  * 
- * Dieser Context ermöglicht es, mehrere Supermärkte mit unterschiedlichen
- * Layouts zu verwalten. Jeder Laden hat seine eigene Kategorien-Reihenfolge.
- * 
- * HAUPTKONZEPT:
- * - Benutzer kann mehrere Läden anlegen (REWE, EDEKA, Aldi, etc.)
- * - Jeder Laden hat eigene Kategorien-Reihenfolge
- * - Beim Einkaufen: Laden auswählen → Liste wird entsprechend sortiert
- * 
- * USE CASE:
- * ```
- * REWE:
- *   1. Obst & Gemüse (vorne)
- *   2. Backwaren
- *   3. Milchprodukte
- *   ...
- * 
- * ALDI:
- *   1. Backwaren (bei Aldi vorne)
- *   2. Tiefkühl
- *   3. Obst & Gemüse
- *   ...
- * 
- * → Gleiche Einkaufsliste, unterschiedliche Sortierung!
- * ```
+ * KONZEPT:
+ * - Jeder User hat seine Stores in storeLayoutsV2/private/{uid}/
+ * - Wenn User in Gruppe ist: Sieht alle Stores aller Gruppenmitglieder
+ * - Merged ALLE Kategorien von ALLEN Stores für ProductManager
+ * - KEINE separaten Gruppen-Stores!
  * 
  * FIREBASE STRUKTUR:
  * ```
- * storeLayouts/
- *   ├─ STORE_ID_1/
- *   │   ├─ name: "REWE"
- *   │   ├─ createdAt: "2024-..."
- *   │   └─ categories: [
- *   │       { id: "obst-gemuese", name: "Obst & Gemüse", order: 1 },
- *   │       { id: "backwaren", name: "Backwaren", order: 2 },
- *   │       ...
- *   │     ]
- *   └─ STORE_ID_2/
- *       ├─ name: "ALDI"
- *       └─ categories: [
- *           { id: "backwaren", name: "Backwaren", order: 1 },
- *           { id: "tiefkuehl", name: "Tiefkühl", order: 2 },
- *           ...
- *         ]
+ * storeLayoutsV2/
+ *   private/
+ *     {userId}/
+ *       {storeId}/
+ *         name: "REWE"
+ *         categories: [...]
+ *         createdAt: "..."
  * ```
- * 
- * WICHTIG:
- * - Laden-Layouts sind für ALLE User geteilt (nicht pro User)
- * - selectedStoreId bestimmt welches Layout aktiv ist
- * - ShoppingListContext nutzt getActiveCategories() für Sortierung
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { database } from '../firebaseConfig';
-import { ref, onValue, set, push, remove, update } from 'firebase/database';
+import { ref, onValue, set, push, remove } from 'firebase/database';
 import { useAuth } from './AuthContext.jsx';
+import { useGroup } from './GroupContext.jsx';
 
-// ============================================================================
-// CONTEXT UND KONSTANTEN
-// ============================================================================
-
-/**
- * StoreLayoutsContext - Der eigentliche Context
- */
 const StoreLayoutsContext = createContext();
 
-/**
- * DEFAULT_CATEGORIES - Standard-Kategorien für neue Läden
- * 
- * VERWENDUNG:
- * - Wenn ein neuer Laden erstellt wird
- * - Als Fallback wenn keine Kategorien vorhanden
- * - Basis für Anpassungen durch den User
- * 
- * STRUKTUR:
- * - id: Eindeutige ID (WICHTIG: Muss mit Produktdatenbank übereinstimmen!)
- * - name: Anzeigename für UI
- * - order: Standard-Sortierung (kann pro Laden angepasst werden)
- * 
- * WARUM DIESE KATEGORIEN?
- * - Deckt Standard-Supermarkt ab
- * - Kompatibel mit Produktdatenbank
- * - "sonstiges" am Ende als Auffangkategorie (order: 99)
- * 
- * WICHTIG:
- * - Diese Kategorien sind ein TEMPLATE
- * - Jeder Laden kann eigene Reihenfolge haben
- * - Kategorien können hinzugefügt/entfernt werden
- */
 const DEFAULT_CATEGORIES = [
   { id: 'obst-gemuese', name: 'Obst & Gemüse', order: 1 },
   { id: 'backwaren', name: 'Backwaren', order: 2 },
@@ -104,483 +42,220 @@ const DEFAULT_CATEGORIES = [
   { id: 'sonstiges', name: 'Sonstiges', order: 99 }
 ];
 
-// ============================================================================
-// CUSTOM HOOK: useStoreLayouts
-// ============================================================================
-
-/**
- * useStoreLayouts - Custom Hook zum Zugriff auf Laden-Layouts
- * 
- * Verwendung:
- * ```
- * const { 
- *   storeLayouts,
- *   selectedStoreId,
- *   createStore,
- *   getActiveCategories 
- * } = useStoreLayouts();
- * ```
- * 
- * @returns {object} StoreLayouts Context Daten
- * @throws {Error} Wenn außerhalb von Provider verwendet
- */
 export const useStoreLayouts = () => {
   const context = useContext(StoreLayoutsContext);
-  
   if (!context) {
     throw new Error('useStoreLayouts must be used within StoreLayoutsProvider');
   }
-  
   return context;
 };
 
-// ============================================================================
-// PROVIDER KOMPONENTE
-// ============================================================================
-
-/**
- * StoreLayoutsProvider - Provider für Laden-Layout-Verwaltung
- * 
- * Diese Komponente:
- * 1. Lädt alle verfügbaren Laden-Layouts
- * 2. Verwaltet welcher Laden aktuell ausgewählt ist
- * 3. Stellt CRUD-Funktionen für Läden bereit
- * 4. Ermöglicht Anpassung der Kategorien-Reihenfolge
- * 5. Liefert Kategorien des aktiven Ladens an ShoppingListContext
- * 
- * VERWENDUNG:
- * Sollte nach AuthProvider, aber vor ShoppingListProvider sein:
- * ```
- * <AuthProvider>
- *   <StoreLayoutsProvider>
- *     <ShoppingListProvider>
- *       <App />
- *     </ShoppingListProvider>
- *   </StoreLayoutsProvider>
- * </AuthProvider>
- * ```
- * 
- * @param {object} props - React Props
- * @param {ReactNode} props.children - Kind-Komponenten
- */
 export const StoreLayoutsProvider = ({ children }) => {
-  
-  // ==========================================================================
-  // STATE MANAGEMENT
-  // ==========================================================================
-  
-  /**
-   * storeLayouts - Array aller verfügbaren Läden
-   * 
-   * Struktur eines Store-Layouts:
-   * {
-   *   id: string,              // Firebase-generierte ID
-   *   name: string,            // "REWE", "ALDI", etc.
-   *   createdAt: string,       // ISO Timestamp
-   *   categories: [            // Kategorien in Laden-Reihenfolge
-   *     { id: string, name: string, order: number },
-   *     ...
-   *   ]
-   * }
-   * 
-   * WICHTIG:
-   * - Für ALLE User geteilt (nicht pro User)
-   * - Jeder kann Läden hinzufügen/bearbeiten
-   * - Use Case: Familie teilt sich Laden-Layouts
-   */
-  const [storeLayouts, setStoreLayouts] = useState([]);
-  
-  /**
-   * selectedStoreId - ID des aktuell ausgewählten Ladens
-   * 
-   * null = Kein Laden ausgewählt (verwendet DEFAULT_CATEGORIES)
-   * string = ID des aktiven Ladens
-   * 
-   * VERWENDUNG:
-   * - User wählt Laden vor dem Einkaufen
-   * - ShoppingList wird nach diesem Layout sortiert
-   * - UI zeigt welcher Laden aktiv ist
-   * 
-   * AUTO-SELECTION:
-   * - Beim ersten Load: Erster Laden wird automatisch ausgewählt
-   * - Bei Löschen: Nächster verfügbarer Laden wird ausgewählt
-   */
-  const [selectedStoreId, setSelectedStoreId] = useState(null);
-  
-  /**
-   * user - Aktueller User aus AuthContext
-   * 
-   * Benötigt für:
-   * - Prüfung ob eingeloggt
-   * - Firebase-Zugriff
-   */
   const { user } = useAuth();
+  const { group, hasGroup, members } = useGroup();
+  
+  const [storeLayouts, setStoreLayouts] = useState([]);
+  const [selectedStoreId, setSelectedStoreId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // ==========================================================================
-  // FIREBASE SYNC (useEffect)
+  // FIREBASE SYNC - LÄDT STORES VON ALLEN GRUPPENMITGLIEDERN
   // ==========================================================================
   
-  /**
-   * Effect: Synchronisiert Laden-Layouts mit Firebase
-   * 
-   * Läuft nur einmal beim Mount und bei User-Änderung.
-   * 
-   * AUTO-SELECTION LOGIK:
-   * - Wenn noch kein Laden ausgewählt ist
-   * - UND Läden vorhanden sind
-   * - → Wähle ersten Laden automatisch
-   * 
-   * WARUM?
-   * - Bessere UX (kein leerer Zustand)
-   * - User kann sofort sortieren
-   * - Sinnvoller Default
-   */
   useEffect(() => {
-    
-    // ------------------------------------------------------------------------
-    // GUARD: User muss eingeloggt sein
-    // ------------------------------------------------------------------------
     if (!user) {
-      // Nicht eingeloggt → State zurücksetzen
       setStoreLayouts([]);
       setSelectedStoreId(null);
+      setLoading(false);
       return;
     }
 
-    // ------------------------------------------------------------------------
-    // FIREBASE LISTENER
-    // ------------------------------------------------------------------------
-    
-    /**
-     * Firebase Referenz zu allen Laden-Layouts
-     * 
-     * Pfad: /storeLayouts
-     * (Root-Level, für alle User)
-     */
-    const layoutsRef = ref(database, 'storeLayouts');
-    
-    /**
-     * onValue - Echtzeit-Listener für Laden-Layouts
-     * 
-     * Triggert bei:
-     * - Initial Load
-     * - Neuer Laden erstellt
-     * - Laden bearbeitet (Name, Kategorien)
-     * - Laden gelöscht
-     */
-    const unsubscribe = onValue(layoutsRef, (snapshot) => {
-      const data = snapshot.val();
-      console.log('Store Layouts geladen:', data);
+    // Liste der User-IDs deren Stores geladen werden sollen
+    const userIdsToLoad = hasGroup && members.length > 0
+      ? members.map(m => m.uid)  // Alle Gruppenmitglieder
+      : [user.uid];               // Nur ich
+
+    const unsubscribers = [];
+    const allStoresByUser = {}; // { userId: {...stores} }
+
+    // Für jeden User: Lade seine Stores
+    userIdsToLoad.forEach(userId => {
+      const userStoresRef = ref(database, `storeLayoutsV2/private/${userId}`);
       
-      // --------------------------------------------------------------------
-      // Fall 1: Läden vorhanden
-      // --------------------------------------------------------------------
-      if (data) {
-        /**
-         * OBJECT → ARRAY KONVERTIERUNG
-         * 
-         * Firebase gibt Object:
-         * {
-         *   "store-id-1": { name: "REWE", ... },
-         *   "store-id-2": { name: "ALDI", ... }
-         * }
-         * 
-         * React UI braucht Array:
-         * [
-         *   { id: "store-id-1", name: "REWE", ... },
-         *   { id: "store-id-2", name: "ALDI", ... }
-         * ]
-         */
-        const layoutsArray = Object.entries(data).map(([id, layout]) => ({
-          id,        // Füge ID als Property hinzu
-          ...layout  // Kopiere alle anderen Properties
-        }));
+      const unsubscribe = onValue(userStoresRef, (snapshot) => {
+        const data = snapshot.val();
         
-        setStoreLayouts(layoutsArray);
-        
-        /**
-         * AUTO-SELECTION LOGIC
-         * 
-         * Wenn noch kein Laden ausgewählt ist:
-         * → Wähle ersten Laden automatisch
-         * 
-         * WARUM?
-         * - Bessere UX (kein "kein Laden ausgewählt" Zustand)
-         * - User kann sofort sortieren
-         * - Sinnvoller Default
-         */
-        if (!selectedStoreId && layoutsArray.length > 0) {
-          setSelectedStoreId(layoutsArray[0].id);
+        if (data) {
+          allStoresByUser[userId] = data;
+        } else {
+          allStoresByUser[userId] = {};
         }
         
-      // --------------------------------------------------------------------
-      // Fall 2: Keine Läden vorhanden
-      // --------------------------------------------------------------------
-      } else {
-        setStoreLayouts([]);
-        // selectedStoreId bleibt (wird auf null gesetzt wenn User sich ausloggt)
-      }
+        // Merge alle Stores mit Ownership
+        const mergedStores = mergeStores(allStoresByUser, userId === user.uid);
+        setStoreLayouts(mergedStores);
+        
+        // Auto-Select ersten Store wenn noch keiner ausgewählt
+        if (!selectedStoreId && mergedStores.length > 0) {
+          setSelectedStoreId(mergedStores[0].id);
+        }
+        
+        setLoading(false);
+      });
+      
+      unsubscribers.push(unsubscribe);
     });
 
-    /**
-     * Cleanup-Funktion
-     * 
-     * Entfernt Listener bei Unmount
-     */
-    return () => unsubscribe();
-    
-  }, [user]); // Neu laden wenn User sich ändert
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
+  }, [user, hasGroup, members]);
 
   // ==========================================================================
-  // CRUD FUNKTIONEN
+  // MERGE STORES & KATEGORIEN
   // ==========================================================================
 
   /**
-   * createStore - Erstellt neuen Laden mit Standard-Kategorien
-   * 
-   * ABLAUF:
-   * 1. Generiere neue eindeutige ID mit push()
-   * 2. Erstelle Laden-Objekt mit:
-   *    - Name (vom User)
-   *    - DEFAULT_CATEGORIES (können später angepasst werden)
-   *    - Timestamp
-   * 3. Speichere in Firebase
-   * 4. Gib ID zurück
-   * 
-   * WICHTIG:
-   * - Neue Läden starten mit DEFAULT_CATEGORIES
-   * - User kann danach Kategorien anpassen (Drag & Drop)
-   * - Auto-Selection greift wenn dies der erste Laden ist
-   * 
-   * @param {string} storeName - Name des Ladens (z.B. "REWE")
-   * @returns {Promise<string>} ID des neuen Ladens
-   * @throws {Error} Bei Firebase-Fehler
-   * 
-   * VERWENDUNG:
-   * ```
-   * const storeId = await createStore('REWE');
-   * console.log('Laden erstellt mit ID:', storeId);
-   * // Auto-Selection macht diesen Laden automatisch aktiv
-   * ```
+   * Merged Stores von allen Usern mit Ownership-Tracking
    */
+  const mergeStores = (storesByUser, isCurrentUser) => {
+    const allStores = [];
+    
+    Object.entries(storesByUser).forEach(([userId, userStores]) => {
+      Object.entries(userStores).forEach(([storeId, storeData]) => {
+        allStores.push({
+          id: storeId,
+          ...storeData,
+          _ownerId: userId,
+          _isOwn: userId === user.uid
+        });
+      });
+    });
+    
+    return allStores;
+  };
+
+  /**
+   * Merged ALLE Kategorien von ALLEN Stores
+   * → Für ProductManager damit alle Kategorien bekannt sind!
+   */
+  const getAllCategories = () => {
+    const categoryMap = new Map();
+    
+    // Sammle alle Kategorien von allen Stores
+    storeLayouts.forEach(store => {
+      if (store.categories && Array.isArray(store.categories)) {
+        store.categories.forEach(cat => {
+          if (!categoryMap.has(cat.id)) {
+            categoryMap.set(cat.id, cat);
+          }
+        });
+      }
+    });
+    
+    // Füge DEFAULT_CATEGORIES hinzu (falls nicht vorhanden)
+    DEFAULT_CATEGORIES.forEach(cat => {
+      if (!categoryMap.has(cat.id)) {
+        categoryMap.set(cat.id, cat);
+      }
+    });
+    
+    // Sortiere nach Order
+    return Array.from(categoryMap.values()).sort((a, b) => a.order - b.order);
+  };
+
+  // ==========================================================================
+  // CRUD FUNKTIONEN - Schreibt in eigenes private/{uid}/
+  // ==========================================================================
+
   const createStore = async (storeName) => {
     if (!user) return;
 
-    /**
-     * Firebase Referenz zur Layouts-Collection
-     */
-    const layoutsRef = ref(database, 'storeLayouts');
-    
-    /**
-     * push() - Generiert neue eindeutige ID
-     * 
-     * Format: "-NxAbC123..." (Firebase Push-ID)
-     */
-    const newStoreRef = push(layoutsRef);
+    const userStoresRef = ref(database, `storeLayoutsV2/private/${user.uid}`);
+    const newStoreRef = push(userStoresRef);
     
     try {
-      /**
-       * Erstelle neuen Laden mit Standard-Daten
-       * 
-       * DEFAULT_CATEGORIES werden kopiert (nicht referenziert!)
-       * → Jeder Laden hat eigene Kategorien-Instanz
-       */
       await set(newStoreRef, {
         name: storeName,
-        categories: DEFAULT_CATEGORIES,  // Kopie der Standard-Kategorien
+        categoryOrder: [],  // ← Leer, User muss Kategorien hinzufügen
         createdAt: new Date().toISOString()
       });
       
-      console.log('Neuer Store erstellt:', storeName);
-      
-      /**
-       * Gib ID zurück
-       * 
-       * Nützlich für:
-       * - UI-Feedback
-       * - Navigation
-       * - Weitere Operationen
-       */
+      console.log('✅ Store erstellt:', storeName);
       return newStoreRef.key;
-      
     } catch (error) {
-      console.error('Fehler beim Erstellen des Stores:', error);
+      console.error('❌ Fehler beim Erstellen:', error);
       throw error;
     }
   };
 
-  /**
-   * renameStore - Benennt Laden um
-   * 
-   * EINFACHE OPERATION:
-   * - Nur der Name wird geändert
-   * - Kategorien bleiben gleich
-   * - ID bleibt gleich
-   * 
-   * @param {string} storeId - Laden-ID
-   * @param {string} newName - Neuer Name
-   * @returns {Promise<void>}
-   * @throws {Error} Bei Firebase-Fehler
-   * 
-   * VERWENDUNG:
-   * ```
-   * await renameStore(storeId, 'REWE Markt');
-   * ```
-   */
   const renameStore = async (storeId, newName) => {
     if (!user) return;
 
-    /**
-     * Direkter Pfad zum name-Property
-     * 
-     * /storeLayouts/{storeId}/name
-     * 
-     * WARUM nicht komplettes Objekt?
-     * - Effizienter (nur name wird übertragen)
-     * - Vermeidet Race Conditions (categories werden nicht überschrieben)
-     */
-    const storeRef = ref(database, `storeLayouts/${storeId}/name`);
+    // Finde Store und prüfe Ownership
+    const store = storeLayouts.find(s => s.id === storeId);
+    if (!store || !store._isOwn) {
+      throw new Error('Du kannst nur deine eigenen Stores umbenennen');
+    }
+
+    const storeRef = ref(database, `storeLayoutsV2/private/${user.uid}/${storeId}/name`);
     
     try {
-      /**
-       * set() überschreibt nur den Namen
-       * 
-       * Alle anderen Properties bleiben unberührt
-       */
       await set(storeRef, newName);
-      console.log('Store umbenannt:', newName);
-      
+      console.log('✅ Store umbenannt:', newName);
     } catch (error) {
-      console.error('Fehler beim Umbenennen:', error);
+      console.error('❌ Fehler beim Umbenennen:', error);
       throw error;
     }
   };
 
-  /**
-   * deleteStore - Löscht Laden komplett
-   * 
-   * WICHTIG:
-   * - Unwiderruflich!
-   * - Alle Kategorien-Anpassungen gehen verloren
-   * - UI sollte Bestätigung zeigen
-   * 
-   * AUTO-SELECTION NACH LÖSCHEN:
-   * - Wenn gelöschter Laden aktiv war
-   * - UND noch andere Läden vorhanden
-   * - → Wähle ersten verbleibenden Laden
-   * 
-   * @param {string} storeId - Zu löschende Laden-ID
-   * @returns {Promise<void>}
-   * @throws {Error} Bei Firebase-Fehler
-   * 
-   * VERWENDUNG:
-   * ```
-   * if (window.confirm('Laden wirklich löschen?')) {
-   *   await deleteStore(storeId);
-   * }
-   * ```
-   */
   const deleteStore = async (storeId) => {
     if (!user) return;
 
-    /**
-     * Referenz zum kompletten Laden
-     */
-    const storeRef = ref(database, `storeLayouts/${storeId}`);
+    // Finde Store und prüfe Ownership
+    const store = storeLayouts.find(s => s.id === storeId);
+    if (!store || !store._isOwn) {
+      throw new Error('Du kannst nur deine eigenen Stores löschen');
+    }
+
+    const storeRef = ref(database, `storeLayoutsV2/private/${user.uid}/${storeId}`);
     
     try {
-      /**
-       * remove() löscht kompletten Laden
-       */
       await remove(storeRef);
       
-      /**
-       * AUTO-SELECTION LOGIK nach Löschen
-       * 
-       * Fall 1: Gelöschter Laden war aktiv + andere Läden vorhanden
-       *         → Wähle ersten verbleibenden Laden
-       * 
-       * Fall 2: Letzter Laden wurde gelöscht
-       *         → selectedStoreId wird null (onValue Listener setzt State)
-       * 
-       * Fall 3: Inaktiver Laden wurde gelöscht
-       *         → Nichts tun (selectedStoreId bleibt)
-       */
-      if (selectedStoreId === storeId && storeLayouts.length > 1) {
-        /**
-         * Finde verbleibende Läden (ohne den gelöschten)
-         */
+      // Wenn gelöschter Store ausgewählt war, wähle anderen
+      if (selectedStoreId === storeId) {
         const remaining = storeLayouts.filter(s => s.id !== storeId);
-        
         if (remaining.length > 0) {
-          /**
-           * Wähle ersten verbleibenden Laden
-           * 
-           * WICHTIG: Dies verhindert "kein Laden ausgewählt" Zustand
-           */
           setSelectedStoreId(remaining[0].id);
+        } else {
+          setSelectedStoreId(null);
         }
       }
       
-      console.log('Store gelöscht');
-      
+      console.log('✅ Store gelöscht');
     } catch (error) {
-      console.error('Fehler beim Löschen:', error);
+      console.error('❌ Fehler beim Löschen:', error);
       throw error;
     }
   };
 
-  /**
-   * updateStoreCategories - Aktualisiert Kategorien eines Ladens
-   * 
-   * VERWENDUNG:
-   * - Nach Drag & Drop im Layout-Editor
-   * - Beim Hinzufügen/Entfernen von Kategorien
-   * - Beim Umbenennen von Kategorien
-   * 
-   * WICHTIG:
-   * - Überschreibt ALLE Kategorien
-   * - categories-Array muss vollständig sein!
-   * - Jede Kategorie braucht: id, name, order
-   * 
-   * @param {string} storeId - Laden-ID
-   * @param {array} categories - Komplettes Kategorien-Array
-   * @returns {Promise<void>}
-   * @throws {Error} Bei Firebase-Fehler
-   * 
-   * VERWENDUNG:
-   * ```
-   * // Nach Drag & Drop Sortierung
-   * const reorderedCategories = categories.map((cat, index) => ({
-   *   ...cat,
-   *   order: index + 1
-   * }));
-   * 
-   * await updateStoreCategories(storeId, reorderedCategories);
-   * ```
-   */
-  const updateStoreCategories = async (storeId, categories) => {
+  const updateStoreCategoryOrder = async (storeId, categoryOrder) => {
     if (!user) return;
 
-    /**
-     * Direkter Pfad zu categories-Array
-     * 
-     * /storeLayouts/{storeId}/categories
-     */
-    const categoriesRef = ref(database, `storeLayouts/${storeId}/categories`);
+    // Finde Store und prüfe Ownership
+    const store = storeLayouts.find(s => s.id === storeId);
+    if (!store || !store._isOwn) {
+      throw new Error('Du kannst nur deine eigenen Stores bearbeiten');
+    }
+
+    const orderRef = ref(database, `storeLayoutsV2/private/${user.uid}/${storeId}/categoryOrder`);
     
     try {
-      /**
-       * set() ersetzt komplettes categories-Array
-       * 
-       * WICHTIG: Komplettes Array übergeben!
-       * Fehlende Kategorien werden gelöscht.
-       */
-      await set(categoriesRef, categories);
-      console.log('Store-Kategorien aktualisiert');
-      
+      await set(orderRef, categoryOrder);
+      console.log('✅ Kategorien-Reihenfolge aktualisiert');
     } catch (error) {
-      console.error('Fehler beim Aktualisieren:', error);
+      console.error('❌ Fehler beim Aktualisieren:', error);
       throw error;
     }
   };
@@ -589,129 +264,58 @@ export const StoreLayoutsProvider = ({ children }) => {
   // HELPER FUNKTIONEN
   // ==========================================================================
 
-  /**
-   * getActiveStore - Gibt aktuell ausgewählten Laden zurück
-   * 
-   * VERWENDUNG:
-   * - UI zeigt aktiven Laden an
-   * - Zugriff auf alle Properties des Ladens
-   * - Basis für getActiveCategories()
-   * 
-   * @returns {object|null} Laden-Objekt oder null wenn nichts ausgewählt
-   * 
-   * BEISPIEL:
-   * ```
-   * const activeStore = getActiveStore();
-   * 
-   * if (activeStore) {
-   *   console.log('Aktiver Laden:', activeStore.name);
-   *   console.log('Kategorien:', activeStore.categories);
-   * } else {
-   *   console.log('Kein Laden ausgewählt');
-   * }
-   * ```
-   */
   const getActiveStore = () => {
     if (!selectedStoreId) return null;
     return storeLayouts.find(s => s.id === selectedStoreId);
   };
 
   /**
-   * getActiveCategories - Gibt Kategorien des aktiven Ladens zurück
+   * Gibt Kategorien für aktiven Store zurück
+   * → Sortiert nach categoryOrder des Stores
    * 
-   * WICHTIGSTE FUNKTION für Integration mit ShoppingListContext!
-   * 
-   * LOGIK:
-   * 1. Hole aktiven Laden mit getActiveStore()
-   * 2. Wenn vorhanden: Gib dessen Kategorien zurück
-   * 3. Wenn nicht: Fallback auf DEFAULT_CATEGORIES
-   * 
-   * VERWENDUNG IN SHOPPINGLISTCONTEXT:
-   * ```
-   * const { getActiveCategories } = useStoreLayouts();
-   * const storeCategories = getActiveCategories();
-   * 
-   * // storeCategories wird für sortByStoreLayout() verwendet
-   * ```
-   * 
-   * @returns {array} Kategorien-Array
-   * 
-   * WICHTIG:
-   * - Niemals undefined/null (immer Array!)
-   * - Fallback auf DEFAULT_CATEGORIES garantiert Funktionalität
-   * - Optional Chaining (?.) für Sicherheit
-   * 
-   * BEISPIEL-RETURN:
-   * ```
-   * [
-   *   { id: "obst-gemuese", name: "Obst & Gemüse", order: 1 },
-   *   { id: "backwaren", name: "Backwaren", order: 2 },
-   *   ...
-   * ]
-   * ```
+   * WICHTIG: Nutzt globale Kategorien aus CategoriesContext!
+   * Diese Funktion wird von ShoppingListContext aufgerufen
    */
-  const getActiveCategories = () => {
+  const getActiveCategories = (globalCategories) => {
     const store = getActiveStore();
+    if (!store || !globalCategories) return [];
     
-    /**
-     * Optional Chaining + Fallback
-     * 
-     * store?.categories:
-     * - Wenn store existiert UND categories Property hat → die Kategorien
-     * - Sonst → undefined
-     * 
-     * || DEFAULT_CATEGORIES:
-     * - Wenn links undefined/null → DEFAULT_CATEGORIES
-     * 
-     * ERGEBNIS:
-     * - Immer ein Array (niemals undefined!)
-     * - Entweder Store-Kategorien oder Default
-     */
-    return store?.categories || DEFAULT_CATEGORIES;
+    const categoryOrder = store.categoryOrder || [];
+    
+    // Sortiere Kategorien nach Store-Reihenfolge
+    const orderedCategories = [];
+    categoryOrder.forEach((catId, index) => {
+      const cat = globalCategories.find(c => c.id === catId);
+      if (cat) {
+        orderedCategories.push({
+          ...cat,
+          order: index + 1
+        });
+      }
+    });
+    
+    return orderedCategories;
   };
 
-  // ==========================================================================
-  // CONTEXT VALUE
-  // ==========================================================================
-  
   /**
-   * value - Bereitgestellte Daten und Funktionen
-   * 
-   * KATEGORIEN:
-   * 
-   * 1. STATE:
-   *    - storeLayouts: Alle verfügbaren Läden
-   *    - selectedStoreId: ID des aktiven Ladens
-   * 
-   * 2. SELECTION:
-   *    - setSelectedStoreId: Laden auswählen
-   * 
-   * 3. CRUD:
-   *    - createStore: Neuen Laden erstellen
-   *    - renameStore: Laden umbenennen
-   *    - deleteStore: Laden löschen
-   *    - updateStoreCategories: Kategorien anpassen
-   * 
-   * 4. HELPERS:
-   *    - getActiveStore: Aktiven Laden holen
-   *    - getActiveCategories: Kategorien des aktiven Ladens holen
+   * DEPRECATED: getAllCategories nicht mehr nötig
+   * Nutze stattdessen useCategories() aus CategoriesContext!
    */
+
   const value = {
     storeLayouts,
     selectedStoreId,
     setSelectedStoreId,
+    loading,
+    hasGroup,
     createStore,
     renameStore,
     deleteStore,
-    updateStoreCategories,
+    updateStoreCategoryOrder,  // ← Geändert!
     getActiveStore,
-    getActiveCategories
+    getActiveCategories  // ← Braucht jetzt globalCategories Parameter
   };
 
-  // ==========================================================================
-  // PROVIDER RETURN
-  // ==========================================================================
-  
   return (
     <StoreLayoutsContext.Provider value={value}>
       {children}

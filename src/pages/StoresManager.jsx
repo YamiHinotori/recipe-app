@@ -10,13 +10,14 @@ import MessageBanner from '../components/global/MessageBanner';
 import EmptyState from '../components/global/EmptyState';
 
 /**
- * StoresManager - Verwaltung aller Läden und deren Layouts
+ * StoresManager - ANGEPASST mit Ownership-Checks
  * 
  * Funktionen:
- * - Läden erstellen, umbenennen, löschen
- * - Aktiven Laden auswählen
- * - Layout-Editor für Kategorien-Reihenfolge öffnen
- * - Feedback-Nachrichten anzeigen
+ * - Läden erstellen (eigene)
+ * - Läden umbenennen (nur eigene!)
+ * - Läden löschen (nur eigene!)
+ * - Aktiven Laden auswählen (alle sichtbar)
+ * - Layout-Editor öffnen (nur für eigene)
  */
 const StoresManager = () => {
   const navigate = useNavigate();
@@ -71,8 +72,14 @@ const StoresManager = () => {
 
   /**
    * Startet Umbenennen-Modus
+   * NUR für eigene Stores!
    */
   const handleStartRename = (store) => {
+    if (!store._isOwn) {
+      showMessage('error', 'Du kannst nur deine eigenen Läden umbenennen');
+      return;
+    }
+    
     setEditingId(store.id);
     setEditName(store.name);
   };
@@ -88,7 +95,7 @@ const StoresManager = () => {
       showMessage('success', 'Laden umbenannt!');
       setEditingId(null);
     } catch (error) {
-      showMessage('error', 'Fehler beim Umbenennen');
+      showMessage('error', error.message || 'Fehler beim Umbenennen');
     }
   };
 
@@ -102,11 +109,20 @@ const StoresManager = () => {
 
   /**
    * Löscht Laden nach Bestätigung
+   * NUR eigene Läden!
    */
   const handleDelete = async (storeId) => {
-    // Letzten Laden schützen
-    if (storeLayouts.length === 1) {
-      alert('Du kannst den letzten Laden nicht löschen!');
+    const store = storeLayouts.find(s => s.id === storeId);
+    
+    if (!store._isOwn) {
+      showMessage('error', 'Du kannst nur deine eigenen Läden löschen');
+      return;
+    }
+    
+    // Eigene Läden zählen
+    const ownStores = storeLayouts.filter(s => s._isOwn);
+    if (ownStores.length === 1) {
+      showMessage('error', 'Du kannst deinen letzten Laden nicht löschen!');
       return;
     }
 
@@ -116,14 +132,22 @@ const StoresManager = () => {
       await deleteStore(storeId);
       showMessage('success', 'Laden gelöscht!');
     } catch (error) {
-      showMessage('error', 'Fehler beim Löschen');
+      showMessage('error', error.message || 'Fehler beim Löschen');
     }
   };
 
   /**
    * Öffnet Layout-Editor für Laden
+   * NUR für eigene Läden!
    */
   const handleEditLayout = (storeId) => {
+    const store = storeLayouts.find(s => s.id === storeId);
+    
+    if (!store._isOwn) {
+      showMessage('error', 'Du kannst nur deine eigenen Läden bearbeiten');
+      return;
+    }
+    
     setEditingLayoutStoreId(storeId);
     setSelectedStoreId(storeId);
     setShowLayoutEditor(true);

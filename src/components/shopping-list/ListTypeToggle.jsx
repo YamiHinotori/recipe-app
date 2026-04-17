@@ -6,7 +6,7 @@ import React from 'react';
  * Ermöglicht Umschalten zwischen verschiedenen Listentypen
  * 
  * Props:
- * @param {string} currentListType - Aktueller Listen-Typ ('shared' oder 'personal')
+ * @param {string} currentListType - Aktueller Listen-Typ ('group' oder 'private')
  * @param {function} onToggle - Callback beim Umschalten (neuer Typ als Parameter)
  */
 const ListTypeToggle = ({ currentListType, onToggle }) => {
@@ -15,26 +15,26 @@ const ListTypeToggle = ({ currentListType, onToggle }) => {
       
       {/* Gemeinsame Liste */}
       <button
-        onClick={() => onToggle('shared')}
+        onClick={() => onToggle('group')}
         className={`flex-1 py-2 px-4 rounded-md font-medium text-sm transition-all ${
-          currentListType === 'shared'
+          currentListType === 'group'
             ? 'bg-white text-blue-700 shadow-sm'
             : 'text-gray-600 hover:text-gray-800'
         }`}
-        aria-pressed={currentListType === 'shared'}
+        aria-pressed={currentListType === 'group'}
       >
         👥 Gemeinsam
       </button>
 
       {/* Persönliche Liste */}
       <button
-        onClick={() => onToggle('personal')}
+        onClick={() => onToggle('private')}
         className={`flex-1 py-2 px-4 rounded-md font-medium text-sm transition-all ${
-          currentListType === 'personal'
+          currentListType === 'private'
             ? 'bg-white text-purple-700 shadow-sm'
             : 'text-gray-600 hover:text-gray-800'
         }`}
-        aria-pressed={currentListType === 'personal'}
+        aria-pressed={currentListType === 'private'}
       >
         👤 Persönlich
       </button>

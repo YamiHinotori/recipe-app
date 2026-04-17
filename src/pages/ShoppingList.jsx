@@ -19,7 +19,7 @@ import EmptyState from '../components/global/EmptyState';
  * - Abhaken/Abholen von Einträgen
  * - Drag & Drop Sortierung
  * - Automatische Sortierung nach Laden-Layout
- * - Umschalten zwischen gemeinsamer und persönlicher Liste
+ * - Umschalten zwischen gemeinsamer und persönlicher Liste (nur wenn Gruppe)
  * - Autocomplete mit Produktdatenbank
  */
 const ShoppingList = () => {
@@ -27,8 +27,9 @@ const ShoppingList = () => {
   const { 
     items, 
     storeCategories,
-    currentListType,
-    setCurrentListType,
+    scope,
+    setScope,
+    hasGroup,
     addItem, 
     toggleItem, 
     removeItem, 
@@ -79,8 +80,15 @@ const ShoppingList = () => {
     e.preventDefault();
     if (newItem.item.trim()) {
       // Produkt zur Datenbank hinzufügen (falls neu)
-      await addProduct(newItem.item.trim(), newItem.category, newItem.unit || '');
-
+      try {
+        await addProduct(newItem.item.trim(), newItem.category, newItem.unit || '');
+      } catch (error) {
+        // Ignoriere "bereits hinzugefügt" - ist okay!
+        if (!error.message?.includes('bereits')) {
+          console.error('Fehler beim Hinzufügen zur Produktdatenbank:', error);
+        }
+      }
+  
       // Zur Einkaufsliste hinzufügen
       await addItem(newItem.item.trim(), newItem.amount, newItem.unit, newItem.category);
       
@@ -90,7 +98,6 @@ const ShoppingList = () => {
       setShowSuggestions(false);
       
       if (keepFormOpen) {
-        // Fokus zurück für schnelles Weitermachen
         setTimeout(() => itemInputRef.current?.focus(), 0);
       } else {
         setShowAddForm(false);
@@ -229,7 +236,7 @@ const ShoppingList = () => {
    * Sortiert nach ausgewähltem Laden
    */
   const handleStoreSelected = (storeId) => {
-    sortByStoreLayout();
+    sortByStoreLayout(storeId);
   };
 
   /**
@@ -286,13 +293,15 @@ const ShoppingList = () => {
           />
         </div>
         
-        {/* Toggle zwischen gemeinsamer und persönlicher Liste */}
-        <div className="max-w-4xl mx-auto px-4 pb-3">
-          <ListTypeToggle
-            currentListType={currentListType}
-            onToggle={setCurrentListType}
-          />
-        </div>
+        {/* Toggle zwischen gemeinsamer und persönlicher Liste (nur wenn Gruppe) */}
+        {hasGroup && (
+          <div className="max-w-4xl mx-auto px-4 pb-3">
+            <ListTypeToggle
+              currentListType={scope}
+              onToggle={setScope}
+            />
+          </div>
+        )}
       </div>
 
       {/* Formular zum Hinzufügen von Artikeln */}

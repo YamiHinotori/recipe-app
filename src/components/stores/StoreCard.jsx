@@ -1,21 +1,24 @@
 import React from 'react';
-import { Store, Edit2, Trash2, Settings as SettingsIcon, Save } from 'lucide-react';
+import { Store, Edit2, Trash2, Settings as SettingsIcon, Save, Lock } from 'lucide-react';
 
 /**
- * StoreCard - Karte für einen einzelnen Laden
+ * StoreCard - ANGEPASST mit Ownership-Checks
  * 
- * Zeigt Laden-Info mit Aktions-Buttons oder Bearbeitungs-Modus
+ * Zeigt Laden-Info mit:
+ * - "Von Gruppenmitglied" Badge für fremde Stores
+ * - Disabled Edit/Delete/Layout Buttons für fremde Stores
+ * - Nur eigene Stores sind bearbeitbar
  * 
  * Props:
- * @param {object} store - Laden-Objekt {id, name, categories}
- * @param {boolean} isSelected - Ist dieser Laden aktiv ausgewählt?
- * @param {boolean} isEditing - Befindet sich dieser Laden im Bearbeitungs-Modus?
+ * @param {object} store - Laden mit _isOwn, _ownerId
+ * @param {boolean} isSelected - Ist dieser Laden aktiv?
+ * @param {boolean} isEditing - Bearbeitungs-Modus?
  * @param {string} editName - Name im Bearbeitungs-Modus
- * @param {boolean} isLastStore - Ist dies der letzte Laden? (Löschen deaktivieren)
- * @param {function} onSelectStore - Callback zum Aktivieren des Ladens
- * @param {function} onEditLayout - Callback zum Öffnen des Layout-Editors
- * @param {function} onStartRename - Callback zum Starten des Umbenennens
- * @param {function} onSaveRename - Callback zum Speichern des neuen Namens
+ * @param {boolean} isLastStore - Letzter Laden? (Löschen deaktivieren)
+ * @param {function} onSelectStore - Callback zum Aktivieren
+ * @param {function} onEditLayout - Callback für Layout-Editor
+ * @param {function} onStartRename - Callback für Umbenennen
+ * @param {function} onSaveRename - Callback zum Speichern
  * @param {function} onCancelRename - Callback zum Abbrechen
  * @param {function} onEditNameChange - Callback bei Namensänderung
  * @param {function} onDelete - Callback zum Löschen
@@ -34,6 +37,9 @@ const StoreCard = ({
   onEditNameChange,
   onDelete
 }) => {
+  // Prüfe ob Store dem User gehört (Default true für Abwärtskompatibilität)
+  const isOwn = store._isOwn !== false;
+
   return (
     <div
       className={`bg-white rounded-lg shadow-sm p-6 border-2 transition-all ${
@@ -69,7 +75,7 @@ const StoreCard = ({
       ) : (
         /* Normal-Modus: Laden-Info und Buttons */
         <>
-          {/* Header mit Icon, Name und "Aktiv"-Badge */}
+          {/* Header mit Icon, Name und Badges */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               
@@ -83,13 +89,23 @@ const StoreCard = ({
               </div>
               
               {/* Name und Kategorien-Anzahl */}
-              <div>
+              <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-800">
                   {store.name}
                 </h3>
                 <p className="text-sm text-gray-500">
-                  {store.categories?.length || 0} Kategorien
+                  {store.categoryOrder?.length || 0} Kategorien
                 </p>
+                
+                {/* Badge für fremde Stores */}
+                {!isOwn && (
+                  <div className="mt-1">
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full inline-flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      Von Gruppenmitglied
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -104,7 +120,7 @@ const StoreCard = ({
           {/* Aktions-Buttons */}
           <div className="flex gap-2">
             
-            {/* Als aktiv setzen */}
+            {/* Als aktiv setzen - IMMER möglich */}
             <button
               onClick={onSelectStore}
               className={`flex-1 py-2 rounded-lg transition-colors font-medium ${
@@ -116,33 +132,53 @@ const StoreCard = ({
               Als aktiv setzen
             </button>
             
-            {/* Layout bearbeiten */}
+            {/* Layout bearbeiten - Disabled wenn nicht eigener Store */}
             <button
               onClick={onEditLayout}
-              className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors"
-              title="Layout bearbeiten"
+              disabled={!isOwn}
+              className={`p-2 rounded-lg transition-colors ${
+                isOwn
+                  ? 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+                  : 'bg-gray-100 text-gray-300 cursor-not-allowed opacity-50'
+              }`}
+              title={!isOwn ? 'Du kannst nur deine eigenen Läden bearbeiten' : 'Layout bearbeiten'}
               aria-label={`Layout von ${store.name} bearbeiten`}
             >
               <SettingsIcon className="w-5 h-5" />
             </button>
             
-            {/* Umbenennen */}
+            {/* Umbenennen - Disabled wenn nicht eigener Store */}
             <button
               onClick={onStartRename}
-              className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-              title="Umbenennen"
+              disabled={!isOwn}
+              className={`p-2 rounded-lg transition-colors ${
+                isOwn
+                  ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                  : 'bg-gray-100 text-gray-300 cursor-not-allowed opacity-50'
+              }`}
+              title={!isOwn ? 'Du kannst nur deine eigenen Läden umbenennen' : 'Umbenennen'}
               aria-label={`${store.name} umbenennen`}
             >
               <Edit2 className="w-5 h-5" />
             </button>
             
-            {/* Löschen (deaktiviert wenn letzter Laden) */}
+            {/* Löschen - Disabled wenn nicht eigener Store ODER letzter Store */}
             <button
               onClick={onDelete}
-              className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={isLastStore ? "Letzter Laden kann nicht gelöscht werden" : "Löschen"}
+              disabled={!isOwn || isLastStore}
+              className={`p-2 rounded-lg transition-colors ${
+                isOwn && !isLastStore
+                  ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                  : 'bg-gray-100 text-gray-300 cursor-not-allowed opacity-50'
+              }`}
+              title={
+                !isOwn 
+                  ? 'Du kannst nur deine eigenen Läden löschen'
+                  : isLastStore 
+                    ? "Letzter Laden kann nicht gelöscht werden" 
+                    : "Löschen"
+              }
               aria-label={`${store.name} löschen`}
-              disabled={isLastStore}
             >
               <Trash2 className="w-5 h-5" />
             </button>
