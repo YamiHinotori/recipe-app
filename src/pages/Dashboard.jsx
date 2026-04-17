@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +26,17 @@ const Dashboard = () => {
   // Filter-Zustand
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Alle');
+  const [fading, setFading] = useState(false);
+
+  const changeCategory = useCallback((newCategory) => {
+    setFading(true);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        setSelectedCategory(newCategory);
+        setFading(false);
+      }, 120);
+    });
+  }, []);
 
   /**
    * Extrahiert alle einzigartigen Kategorien aus Rezepten
@@ -72,12 +83,10 @@ const Dashboard = () => {
     const currentIndex = categories.indexOf(selectedCategory);
     if (deltaX < 0) {
       // Wisch nach links → nächste Kategorie
-      const next = categories[(currentIndex + 1) % categories.length];
-      setSelectedCategory(next);
+      changeCategory(categories[(currentIndex + 1) % categories.length]);
     } else {
       // Wisch nach rechts → vorherige Kategorie
-      const prev = categories[(currentIndex - 1 + categories.length) % categories.length];
-      setSelectedCategory(prev);
+      changeCategory(categories[(currentIndex - 1 + categories.length) % categories.length]);
     }
   };
 
@@ -100,11 +109,15 @@ const Dashboard = () => {
         onSearchChange={setSearchTerm}
         categories={categories}
         selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
+        onCategoryChange={changeCategory}
       />
 
       {/* Grid mit allen Rezepten – Swipe links/rechts wechselt Kategorie */}
-      <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className={`transition-opacity duration-150 ${fading ? 'opacity-0' : 'opacity-100'}`}
+      >
         <RecipeGrid
           recipes={filteredRecipes}
           loading={loading}
